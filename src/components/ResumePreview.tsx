@@ -110,7 +110,8 @@ function ResumePreview({ data, photo, settings, activeModule, onModuleHover, onM
   }, [moduleIds, pageGroups])
 
   const previewScale = Math.min(1, Math.max(0.55, previewWidth / 794))
-  const pageCount = Math.max(1, pageGroups.length)
+  const visiblePageGroups = pageGroupsMatchModuleIds(pageGroups, moduleIds) ? pageGroups : [moduleIds]
+  const pageCount = Math.max(1, visiblePageGroups.length)
   const contentHeight = pageCount * A4_PAGE_HEIGHT
   const pageVerticalMargin = Math.max(0, settings.pageVerticalMargin)
   const pageHorizontalMargin = Math.max(0, settings.pageHorizontalMargin)
@@ -142,7 +143,7 @@ function ResumePreview({ data, photo, settings, activeModule, onModuleHover, onM
               activeModule={activeModule}
               onModuleHover={onModuleHover}
               onModuleClick={onModuleClick}
-              pageGroups={pageGroups}
+              pageGroups={visiblePageGroups}
             />
           </div>
         </div>
@@ -978,6 +979,11 @@ function pageGroupsEqual(left: string[][], right: string[][]) {
     page.length === right[pageIndex].length
     && page.every((moduleId, moduleIndex) => moduleId === right[pageIndex][moduleIndex])
   ))
+}
+
+function pageGroupsMatchModuleIds(pageGroups: string[][], moduleIds: string[]) {
+  const groupedIds = pageGroups.flat()
+  return groupedIds.length === moduleIds.length && groupedIds.every((moduleId, index) => moduleId === moduleIds[index])
 }
 
 export default memo(ResumePreview)
