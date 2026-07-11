@@ -103,6 +103,16 @@ function EditorPanel({ data, photo, onChange, onPhotoChange, activeModuleId, onM
     onChange({ ...data, workExperience: nextWorkExperience })
   }
 
+  const updateWorkEndDate = (index: number, value: string) => {
+    const nextWorkExperience = [...data.workExperience]
+    nextWorkExperience[index] = {
+      ...nextWorkExperience[index],
+      isCurrent: value === '至今',
+      endDate: value === '至今' ? '' : value,
+    }
+    onChange({ ...data, workExperience: nextWorkExperience })
+  }
+
   const addWork = () => {
     const nextData = {
       ...data,
@@ -142,6 +152,16 @@ function EditorPanel({ data, photo, onChange, onPhotoChange, activeModuleId, onM
     onChange({ ...data, projectExperience: nextProjects })
   }
 
+  const updateProjectEndDate = (index: number, value: string) => {
+    const nextProjects = [...data.projectExperience]
+    nextProjects[index] = {
+      ...nextProjects[index],
+      isCurrent: value === '至今',
+      endDate: value === '至今' ? '' : value,
+    }
+    onChange({ ...data, projectExperience: nextProjects })
+  }
+
   const addProject = () => {
     const nextData = {
       ...data,
@@ -165,6 +185,16 @@ function EditorPanel({ data, photo, onChange, onPhotoChange, activeModuleId, onM
   const updateClub = (index: number, field: keyof WorkItem, value: string | boolean) => {
     const nextClubs = [...data.clubExperience]
     nextClubs[index] = { ...nextClubs[index], [field]: value }
+    onChange({ ...data, clubExperience: nextClubs })
+  }
+
+  const updateClubEndDate = (index: number, value: string) => {
+    const nextClubs = [...data.clubExperience]
+    nextClubs[index] = {
+      ...nextClubs[index],
+      isCurrent: value === '至今',
+      endDate: value === '至今' ? '' : value,
+    }
     onChange({ ...data, clubExperience: nextClubs })
   }
 
@@ -344,16 +374,7 @@ function EditorPanel({ data, photo, onChange, onPhotoChange, activeModuleId, onM
               <MonthField
                 label="结束时间"
                 value={data.workExperience[activeWorkIndex].isCurrent ? '至今' : data.workExperience[activeWorkIndex].endDate}
-                onChange={value => {
-                  if (value === '至今') {
-                    updateWork(activeWorkIndex, 'isCurrent', true)
-                    updateWork(activeWorkIndex, 'endDate', '')
-                    return
-                  }
-
-                  updateWork(activeWorkIndex, 'isCurrent', false)
-                  updateWork(activeWorkIndex, 'endDate', value)
-                }}
+                onChange={value => updateWorkEndDate(activeWorkIndex, value)}
                 allowPresent
               />
               <FormField label="城市" value={data.workExperience[activeWorkIndex].city} onChange={value => updateWork(activeWorkIndex, 'city', value)} />
@@ -399,6 +420,7 @@ function EditorPanel({ data, photo, onChange, onPhotoChange, activeModuleId, onM
             onAdd={addProject}
             onRemove={() => removeProject(activeProjectIndex)}
             onChange={(field, value) => updateProject(activeProjectIndex, field, value)}
+            onEndDateChange={value => updateProjectEndDate(activeProjectIndex, value)}
           />
         ) : null}
 
@@ -432,6 +454,7 @@ function EditorPanel({ data, photo, onChange, onPhotoChange, activeModuleId, onM
             onAdd={addClub}
             onRemove={() => removeClub(activeClubIndex)}
             onChange={(field, value) => updateClub(activeClubIndex, field, value)}
+            onEndDateChange={value => updateClubEndDate(activeClubIndex, value)}
           />
         ) : null}
 
@@ -567,6 +590,7 @@ function ExperienceEditorSection({
   onAdd,
   onRemove,
   onChange,
+  onEndDateChange,
 }: {
   eyebrow: string
   title: string
@@ -576,6 +600,7 @@ function ExperienceEditorSection({
   onAdd: () => void
   onRemove: () => void
   onChange: (field: keyof WorkItem, value: string | boolean) => void
+  onEndDateChange: (value: string) => void
 }) {
   return (
     <EditorSection
@@ -598,16 +623,7 @@ function ExperienceEditorSection({
         <MonthField
           label="结束时间"
           value={item.isCurrent ? '至今' : item.endDate}
-          onChange={value => {
-            if (value === '至今') {
-              onChange('isCurrent', true)
-              onChange('endDate', '')
-              return
-            }
-
-            onChange('isCurrent', false)
-            onChange('endDate', value)
-          }}
+          onChange={onEndDateChange}
           allowPresent
         />
         <FormField label="城市" value={item.city} onChange={value => onChange('city', value)} />
