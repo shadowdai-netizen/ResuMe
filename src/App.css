@@ -107,6 +107,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
+  white-space: nowrap;
 }
 
 .preview-tab:hover {
@@ -632,6 +633,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s, color 0.2s;
+  white-space: nowrap;
 }
 
 .toolbar-btn.primary {
@@ -678,6 +680,38 @@
   display: none;
 }
 
+@media (max-width: 1500px) {
+  .preview-tabbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .preview-tabs {
+    align-self: flex-start;
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .toolbar-btn {
+    justify-content: center;
+    min-width: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+@media (max-width: 900px) {
+  .toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1240px) {
   .preview-stage-shell {
     padding-left: 0;
@@ -698,6 +732,26 @@
 
   .resume-preview-wrapper {
     padding: 12px 0 0;
+  }
+}
+
+@media (max-width: 540px) {
+  .preview-tabbar {
+    padding: 12px;
+  }
+
+  .preview-tabs {
+    width: 100%;
+  }
+
+  .preview-tab {
+    flex: 1 1 0;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .toolbar {
+    grid-template-columns: 1fr;
   }
 }
 
