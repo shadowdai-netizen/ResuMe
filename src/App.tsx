@@ -19,7 +19,7 @@ const TITLE_STYLE_OPTIONS: Array<{ value: TitleStyleVariant; label: string; desc
   { value: 'classic', label: '经典竖线', description: '稳妥、专业、信息密度高' },
   { value: 'banner', label: '横幅标签', description: '更醒目，适合强调分段感' },
   { value: 'underline', label: '重线标题', description: '更现代，视觉更轻' },
-  { value: 'capsule', label: '圆角徽标', description: '更柔和，也更有个性' },
+  { value: 'capsule', label: '矩形横条', description: '色块醒目，适合强化分区层次' },
 ]
 
 const PROFILE_STYLE_OPTIONS: Array<{ value: ProfileStyleVariant; label: string; description: string }> = [
@@ -30,6 +30,7 @@ const PROFILE_STYLE_OPTIONS: Array<{ value: ProfileStyleVariant; label: string; 
 ]
 
 const COLOR_PRESETS = ['#111827', '#1f3a5f', '#14532d', '#7c2d12', '#4c1d95']
+const TITLE_BAR_COLOR_PRESETS = ['#111827', '#1e3a5f', '#0f766e', '#9a3412', '#be123c', '#4d7c0f', '#a16207']
 
 function App() {
   const resumeRef = useRef<HTMLDivElement>(null)
@@ -38,6 +39,7 @@ function App() {
   const [activeModule, setActiveModule] = useState<string | null>(null)
   const [activePreviewTab, setActivePreviewTab] = useState<'typography' | 'titles'>('typography')
   const [schemaFeedback, setSchemaFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [previewPageCount, setPreviewPageCount] = useState(1)
   const [previewSettings, setPreviewSettings] = useState<PreviewSettings>({
     fontFamily: FONT_OPTIONS[0].value,
     fontSize: 12,
@@ -46,6 +48,8 @@ function App() {
     moduleSpacing: 5,
     titleStyle: 'classic',
     profileStyle: 'classic',
+    onePageMode: false,
+    titleBarColor: '#111827',
   })
 
   const handleExportPDF = async () => {
@@ -60,6 +64,14 @@ function App() {
   const handleModuleClick = useCallback((moduleId: string) => {
     setActiveModule(moduleId)
   }, [])
+
+  const handleOnePage = useCallback(() => {
+    if (previewPageCount <= 1) {
+      return
+    }
+
+    setPreviewSettings(prev => ({ ...prev, onePageMode: true }))
+  }, [previewPageCount])
 
   const handleExportSchema = useCallback(() => {
     const schemaFile = createResumeSchemaFile(resumeData)
@@ -163,6 +175,15 @@ function App() {
                       onClick={handleExportPDF}
                     >
                       下载 PDF
+                    </button>
+                    <button
+                      type="button"
+                      className="toolbar-btn secondary"
+                      onClick={handleOnePage}
+                      disabled={previewPageCount <= 1 || previewSettings.onePageMode}
+                      title={previewSettings.onePageMode ? '已启用一页模式' : '仅在简历超过一页时可用'}
+                    >
+                      {previewSettings.onePageMode ? '已压缩一页' : '一键一页'}
                     </button>
                   </div>
                 </div>
@@ -288,7 +309,29 @@ function App() {
                       </div>
 
                       <div className="style-picker-group">
-                        <span className="style-picker-label">大模块标题样式</span>
+                        <div className="style-picker-heading">
+                          <span className="style-picker-label">大模块标题样式</span>
+                          <div className="title-bar-color-control">
+                            <span>横条底色</span>
+                            <div className="title-bar-color-presets">
+                              {TITLE_BAR_COLOR_PRESETS.map(color => (
+                                <button
+                                  key={color}
+                                  type="button"
+                                  className={`title-bar-color-swatch${previewSettings.titleBarColor === color ? ' active' : ''}`}
+                                  style={{ background: color }}
+                                  onClick={() => setPreviewSettings(prev => ({ ...prev, titleBarColor: color }))}
+                                  title={color}
+                                />
+                              ))}
+                            </div>
+                            <input
+                              type="color"
+                              value={previewSettings.titleBarColor}
+                              onChange={event => setPreviewSettings(prev => ({ ...prev, titleBarColor: event.target.value }))}
+                            />
+                          </div>
+                        </div>
                         <div className="title-style-grid">
                           {TITLE_STYLE_OPTIONS.map(option => (
                             <button
@@ -320,6 +363,7 @@ function App() {
                   activeModule={activeModule}
                   onModuleHover={handleModuleHover}
                   onModuleClick={handleModuleClick}
+                  onPageCountChange={setPreviewPageCount}
                 />
               </div>
             </div>

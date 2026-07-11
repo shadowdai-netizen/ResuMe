@@ -38,12 +38,6 @@ function ModuleManagerPanel({
     onChange({ ...data, modules })
   }
 
-  const updateModuleTitle = (moduleId: string, title: string) => {
-    updateModules(data.modules.map(module => (
-      module.id === moduleId ? { ...module, title } : module
-    )))
-  }
-
   const moveModule = (moduleId: string, direction: 'up' | 'down') => {
     const index = data.modules.findIndex(module => module.id === moduleId)
     if (index === -1) return
@@ -204,14 +198,6 @@ function ModuleManagerPanel({
                 </button>
 
                 <div className="module-card-body">
-                  <input
-                    className="module-card-input"
-                    value={module.title}
-                    onChange={event => updateModuleTitle(module.id, event.target.value)}
-                    disabled={isFixed}
-                    placeholder={getModuleTitle(module)}
-                  />
-
                   <div className="module-card-actions">
                     <button
                       type="button"

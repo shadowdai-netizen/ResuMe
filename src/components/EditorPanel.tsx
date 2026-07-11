@@ -36,6 +36,15 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
     })
   }
 
+  const updateModuleTitle = (moduleId: string, title: string) => {
+    onChange({
+      ...data,
+      modules: data.modules.map(module => (
+        module.id === moduleId ? { ...module, title } : module
+      )),
+    })
+  }
+
   const updateEducation = (index: number, field: string, value: string) => {
     const nextEducation = [...data.education]
     nextEducation[index] = { ...nextEducation[index], [field]: value }
@@ -212,6 +221,12 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
         {activeModuleId === 'education' && educationModule ? (
           <EmptySection
             title={getModuleTitle(educationModule)}
+            titleEditor={(
+              <ModuleTitleInput
+                value={educationModule.title}
+                onChange={value => updateModuleTitle(educationModule.id, value)}
+              />
+            )}
             description="当前还没有教育经历条目，先新增一条再开始编辑。"
             actionLabel="+ 添加教育经历"
             onAction={addEducation}
@@ -223,6 +238,12 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
             eyebrow="教育经历"
             title={`${getModuleTitle(educationModule)} ${activeEducationIndex + 1}`}
             description={`当前共 ${data.education.length} 条，右侧可以快速切换其它条目。`}
+            titleEditor={(
+              <ModuleTitleInput
+                value={educationModule.title}
+                onChange={value => updateModuleTitle(educationModule.id, value)}
+              />
+            )}
             actions={(
               <>
                 <button type="button" className="editor-action-btn" onClick={addEducation}>新增同类条目</button>
@@ -254,6 +275,12 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
         {activeModuleId === 'workExperience' && workModule ? (
           <EmptySection
             title={getModuleTitle(workModule)}
+            titleEditor={(
+              <ModuleTitleInput
+                value={workModule.title}
+                onChange={value => updateModuleTitle(workModule.id, value)}
+              />
+            )}
             description="当前还没有工作经历条目，先新增一条再开始编辑。"
             actionLabel="+ 添加工作经历"
             onAction={addWork}
@@ -265,6 +292,12 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
             eyebrow="工作经历"
             title={`${getModuleTitle(workModule)} ${activeWorkIndex + 1}`}
             description={`当前共 ${data.workExperience.length} 条，右侧可以切换其它公司经历。`}
+            titleEditor={(
+              <ModuleTitleInput
+                value={workModule.title}
+                onChange={value => updateModuleTitle(workModule.id, value)}
+              />
+            )}
             actions={(
               <>
                 <button type="button" className="editor-action-btn" onClick={addWork}>新增同类条目</button>
@@ -308,6 +341,12 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
         {activeModuleId === 'projectExperience' && projectModule ? (
           <EmptySection
             title={getModuleTitle(projectModule)}
+            titleEditor={(
+              <ModuleTitleInput
+                value={projectModule.title}
+                onChange={value => updateModuleTitle(projectModule.id, value)}
+              />
+            )}
             description="当前还没有项目经历条目，先新增一条再开始编辑。"
             actionLabel="+ 添加项目经历"
             onAction={addProject}
@@ -319,6 +358,12 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
             eyebrow="项目经历"
             title={getModuleTitle(projectModule) + ' ' + (activeProjectIndex + 1)}
             description={'当前共 ' + data.projectExperience.length + ' 条，右侧可以快速切换其它项目。'}
+            titleEditor={(
+              <ModuleTitleInput
+                value={projectModule.title}
+                onChange={value => updateModuleTitle(projectModule.id, value)}
+              />
+            )}
             item={data.projectExperience[activeProjectIndex]}
             onAdd={addProject}
             onRemove={() => removeProject(activeProjectIndex)}
@@ -329,6 +374,12 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
         {activeModuleId === 'clubExperience' && clubModule ? (
           <EmptySection
             title={getModuleTitle(clubModule)}
+            titleEditor={(
+              <ModuleTitleInput
+                value={clubModule.title}
+                onChange={value => updateModuleTitle(clubModule.id, value)}
+              />
+            )}
             description="当前还没有社团和组织经历条目，先新增一条再开始编辑。"
             actionLabel="+ 添加社团经历"
             onAction={addClub}
@@ -340,6 +391,12 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
             eyebrow="社团和组织经历"
             title={getModuleTitle(clubModule) + ' ' + (activeClubIndex + 1)}
             description={'当前共 ' + data.clubExperience.length + ' 条，右侧可以快速切换其它经历。'}
+            titleEditor={(
+              <ModuleTitleInput
+                value={clubModule.title}
+                onChange={value => updateModuleTitle(clubModule.id, value)}
+              />
+            )}
             item={data.clubExperience[activeClubIndex]}
             onAdd={addClub}
             onRemove={() => removeClub(activeClubIndex)}
@@ -352,6 +409,12 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
             eyebrow="Markdown 模块"
             title={getModuleTitle(summaryModule)}
             description="适合摘要、技能概览等整体性内容。"
+            titleEditor={(
+              <ModuleTitleInput
+                value={summaryModule.title}
+                onChange={value => updateModuleTitle(summaryModule.id, value)}
+              />
+            )}
           >
             <MarkdownEditor
               value={data.personalSummary || ''}
@@ -366,6 +429,12 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
             eyebrow="自定义大模块"
             title={getModuleTitle(activeCustomModule)}
             description="该模块会按右侧标题展示在预览区，内容支持基础 Markdown 排版。"
+            titleEditor={(
+              <ModuleTitleInput
+                value={activeCustomModule.title}
+                onChange={value => updateModuleTitle(activeCustomModule.id, value)}
+              />
+            )}
           >
             <MarkdownEditor
               value={activeCustomModule.content || ''}
@@ -392,12 +461,14 @@ function EditorSection({
   eyebrow,
   title,
   description,
+  titleEditor,
   actions,
   children,
 }: {
   eyebrow: string
   title: string
   description: string
+  titleEditor?: ReactNode
   actions?: ReactNode
   children: ReactNode
 }) {
@@ -406,7 +477,7 @@ function EditorSection({
       <div className="editor-section-top">
         <div>
           <span className="editor-eyebrow">{eyebrow}</span>
-          <h3 className="editor-section-title">{title}</h3>
+          {titleEditor || <h3 className="editor-section-title">{title}</h3>}
           <p className="editor-section-desc">{description}</p>
         </div>
         {actions ? <div className="editor-section-actions">{actions}</div> : null}
@@ -416,20 +487,36 @@ function EditorSection({
   )
 }
 
+function ModuleTitleInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="editor-module-title-field">
+      <span className="form-label">模块标题</span>
+      <input
+        className="editor-module-title-input"
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        placeholder="输入模块标题"
+      />
+    </label>
+  )
+}
+
 function EmptySection({
   title,
+  titleEditor,
   description,
   actionLabel,
   onAction,
 }: {
   title: string
+  titleEditor?: ReactNode
   description: string
   actionLabel?: string
   onAction?: () => void
 }) {
   return (
     <section className="editor-empty-card">
-      <h3>{title}</h3>
+      {titleEditor || <h3>{title}</h3>}
       <p>{description}</p>
       {actionLabel && onAction ? (
         <button type="button" className="editor-primary-btn" onClick={onAction}>
@@ -444,6 +531,7 @@ function ExperienceEditorSection({
   eyebrow,
   title,
   description,
+  titleEditor,
   item,
   onAdd,
   onRemove,
@@ -452,6 +540,7 @@ function ExperienceEditorSection({
   eyebrow: string
   title: string
   description: string
+  titleEditor: ReactNode
   item: WorkItem
   onAdd: () => void
   onRemove: () => void
@@ -462,6 +551,7 @@ function ExperienceEditorSection({
       eyebrow={eyebrow}
       title={title}
       description={description}
+      titleEditor={titleEditor}
       actions={(
         <>
           <button type="button" className="editor-action-btn" onClick={onAdd}>新增同类条目</button>

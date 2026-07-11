@@ -118,6 +118,32 @@
   color: #667085;
 }
 
+.editor-module-title-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  max-width: 360px;
+}
+
+.editor-module-title-input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.editor-module-title-input:focus {
+  border-color: rgba(74, 108, 247, 0.46);
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+}
+
 .editor-section-actions {
   display: flex;
   flex-wrap: wrap;

@@ -19,6 +19,8 @@ export interface PreviewSettings {
   moduleSpacing: number
   titleStyle: TitleStyleVariant
   profileStyle: ProfileStyleVariant
+  onePageMode: boolean
+  titleBarColor: string
 }
 
 interface ResumePreviewProps {
@@ -27,9 +29,10 @@ interface ResumePreviewProps {
   activeModule: string | null
   onModuleHover: (moduleId: string | null) => void
   onModuleClick: (moduleId: string) => void
+  onPageCountChange?: (pageCount: number) => void
 }
 
-function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleClick }: ResumePreviewProps) {
+function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleClick, onPageCountChange }: ResumePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null)
   const [previewWidth, setPreviewWidth] = useState(794)
   const [contentHeight, setContentHeight] = useState(A4_PAGE_HEIGHT)
@@ -37,20 +40,22 @@ function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleCl
   useEffect(() => {
     const element = previewRef.current
     const page = element?.querySelector<HTMLElement>('.main')
+    const content = element?.querySelector<HTMLElement>('.content')
 
-    if (!element || !page) {
+    if (!element || !page || !content) {
       return
     }
 
     const updateSize = () => {
       setPreviewWidth(element.clientWidth || 794)
-      setContentHeight(Math.max(A4_PAGE_HEIGHT, page.scrollHeight))
+      const measuredHeight = content.offsetTop + content.scrollHeight
+      setContentHeight(Math.max(A4_PAGE_HEIGHT, measuredHeight))
     }
 
     updateSize()
     const observer = new ResizeObserver(updateSize)
     observer.observe(element)
-    observer.observe(page)
+    observer.observe(content)
 
     return () => observer.disconnect()
   }, [])
@@ -60,6 +65,10 @@ function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleCl
     1,
     Math.ceil((contentHeight - A4_PAGE_MARGIN_PX) / A4_PAGE_CONTENT_HEIGHT),
   )
+
+  useEffect(() => {
+    onPageCountChange?.(pageCount)
+  }, [onPageCountChange, pageCount])
 
   return (
     <div className="resume-preview-frame">
@@ -106,10 +115,17 @@ function ResumePage({
 }: ResumePageProps) {
   const themeColor = settings.textColor
   const pageMargin = A4_PAGE_MARGIN_MM
-  const moduleSpacing = settings.moduleSpacing
-  const moduleTitleSpacing = Math.max(2, Number((moduleSpacing * 0.7).toFixed(1)))
-  const itemSpacing = 3.2
+  const moduleSpacing = settings.onePageMode
+    ? Math.max(1.5, Number((settings.moduleSpacing * 0.48).toFixed(1)))
+    : settings.moduleSpacing
+  const moduleTitleSpacing = settings.onePageMode
+    ? Math.max(1, Number((moduleSpacing * 0.55).toFixed(1)))
+    : Math.max(2, Number((moduleSpacing * 0.7).toFixed(1)))
+  const itemSpacing = settings.onePageMode ? 1.6 : 3.2
   const scale = settings.fontSize / 12
+  const lineHeight = settings.onePageMode
+    ? Math.max(1.3, Number((settings.lineHeight * 0.86).toFixed(2)))
+    : settings.lineHeight
   const mutedColor = withAlpha(settings.textColor, 0.7)
   const subtleColor = withAlpha(settings.textColor, 0.2)
 
@@ -118,7 +134,7 @@ function ResumePage({
       className="main one-page-container"
       style={{
         fontFamily: settings.fontFamily,
-        lineHeight: settings.lineHeight,
+        lineHeight,
         fontSize: `${settings.fontSize}px`,
         color: settings.textColor,
         padding: `${pageMargin}mm`,
@@ -143,7 +159,10 @@ function ResumePage({
         ))}
       </div>
 
-      <div className="content main-page-0">
+      <div
+        className="content main-page-0"
+        style={{ padding: settings.onePageMode ? '18px 40px' : '32px 40px' }}
+      >
         <div style={{ height: '100%', maxWidth: '100%', overflow: 'hidden' }}>
           <div className="content-scroll" style={{ marginTop: 0, position: 'relative' }}>
             {data.modules.map(module => renderModuleSection({
@@ -162,6 +181,7 @@ function ResumePage({
               scale,
               titleStyle: settings.titleStyle,
               profileStyle: settings.profileStyle,
+              titleBarColor: settings.titleBarColor,
             }))}
           </div>
         </div>
@@ -186,6 +206,7 @@ function renderModuleSection({
   scale,
   titleStyle,
   profileStyle,
+  titleBarColor,
 }: {
   module: ResumeModule
   data: ResumeData
@@ -202,6 +223,7 @@ function renderModuleSection({
   scale: number
   titleStyle: TitleStyleVariant
   profileStyle: ProfileStyleVariant
+  titleBarColor: string
 }) {
   if (module.type === 'basicInfo') {
     return (
@@ -237,6 +259,7 @@ function renderModuleSection({
         moduleTitleSpacing={moduleTitleSpacing}
         scale={scale}
         titleStyle={titleStyle}
+        titleBarColor={titleBarColor}
       >
         {data.education.map((edu, index) => (
           <ModuleWrapper
@@ -273,6 +296,7 @@ function renderModuleSection({
         moduleTitleSpacing={moduleTitleSpacing}
         scale={scale}
         titleStyle={titleStyle}
+        titleBarColor={titleBarColor}
       >
         {data.workExperience.map((work, index) => (
           <ModuleWrapper
@@ -312,6 +336,7 @@ function renderModuleSection({
         moduleTitleSpacing={moduleTitleSpacing}
         scale={scale}
         titleStyle={titleStyle}
+        titleBarColor={titleBarColor}
       >
         {items.map((item, index) => (
           <ModuleWrapper
@@ -348,6 +373,7 @@ function renderModuleSection({
         moduleTitleSpacing={moduleTitleSpacing}
         scale={scale}
         titleStyle={titleStyle}
+        titleBarColor={titleBarColor}
       >
         <ModuleWrapper
           moduleId="personalSummary"
@@ -378,6 +404,7 @@ function renderModuleSection({
         moduleTitleSpacing={moduleTitleSpacing}
         scale={scale}
         titleStyle={titleStyle}
+        titleBarColor={titleBarColor}
       >
         <ModuleWrapper
           moduleId={module.id}
@@ -512,7 +539,7 @@ function ProfileField({ icon, label, value, themeColor, mutedColor }: {
   )
 }
 
-function SectionBlock({ type, title, children, themeColor, subtleColor, moduleSpacing, moduleTitleSpacing, scale, titleStyle }: {
+function SectionBlock({ type, title, children, themeColor, subtleColor, moduleSpacing, moduleTitleSpacing, scale, titleStyle, titleBarColor }: {
   type: string
   title: string
   children: React.ReactNode
@@ -522,11 +549,12 @@ function SectionBlock({ type, title, children, themeColor, subtleColor, moduleSp
   moduleTitleSpacing: number
   scale: number
   titleStyle: TitleStyleVariant
+  titleBarColor: string
 }) {
   return (
     <div id={type} className="option option-strip option-wrapper-basic" style={{ marginBottom: `${moduleSpacing}mm` }}>
       <div className="module-title-wrapper" style={{ marginBottom: `${moduleTitleSpacing}mm`, backgroundColor: 'unset' }}>
-        <StripTitle title={title} themeColor={themeColor} subtleColor={subtleColor} scale={scale} titleStyle={titleStyle} />
+        <StripTitle title={title} themeColor={themeColor} subtleColor={subtleColor} scale={scale} titleStyle={titleStyle} titleBarColor={titleBarColor} />
       </div>
       <div className="info-content" style={{ flex: '1 1 0%' }}>
         {children}
@@ -541,12 +569,14 @@ function StripTitle({
   subtleColor,
   scale,
   titleStyle,
+  titleBarColor,
 }: {
   title: string
   themeColor: string
   subtleColor: string
   scale: number
   titleStyle: TitleStyleVariant
+  titleBarColor: string
 }) {
   if (titleStyle === 'banner') {
     return (
@@ -581,23 +611,28 @@ function StripTitle({
 
   if (titleStyle === 'capsule') {
     return (
-      <div className="strip-title-wrapper capsule" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div
+        className="strip-title-wrapper capsule"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          width: '100%',
+          padding: '5px 12px',
+          borderRadius: 0,
+          background: titleBarColor,
+        }}
+      >
         <span
           className="title"
           style={{
-            color: themeColor,
+            color: '#fff',
             fontSize: sizePx(14, scale),
             fontWeight: 'bold',
-            padding: '5px 12px',
-            borderRadius: '10px',
-            border: `1px solid ${subtleColor}`,
-            background: withAlpha(themeColor, 0.06),
             letterSpacing: '1px',
           }}
         >
           {title}
         </span>
-        <div className="bg" style={{ background: subtleColor, flex: 1, height: '1px' }}></div>
       </div>
     )
   }

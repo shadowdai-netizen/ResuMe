@@ -79,27 +79,6 @@
   padding: 0 14px 14px;
 }
 
-.module-card-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid rgba(17, 24, 39, 0.1);
-  border-radius: 12px;
-  background: #fff;
-  color: #111827;
-  font-size: 13px;
-  outline: none;
-}
-
-.module-card-input:focus {
-  border-color: rgba(74, 108, 247, 0.48);
-  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
-}
-
-.module-card-input:disabled {
-  background: #f7f7f8;
-  color: #98a2b3;
-}
-
 .module-card-actions {
   display: flex;
   gap: 8px;
