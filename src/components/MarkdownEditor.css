@@ -1,0 +1,66 @@
+.md-editor-shell {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.md-editor-shell:focus-within {
+  border-color: #4a6cf7;
+  box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.08);
+}
+
+.md-editor-shell .md-editor-root {
+  font-size: 12px;
+}
+
+.md-editor-shell .md-editor-toolbar {
+  border: 0;
+  border-bottom: 1px solid #e8e8e8;
+  background: #f8f8f8;
+  padding: 4px 6px;
+  gap: 4px;
+}
+
+.md-editor-shell .md-editor-toolbar > div[role='separator'] {
+  margin: 0 2px;
+}
+
+.md-editor-shell .md-editor-toolbar button {
+  min-width: 28px;
+  height: 26px;
+}
+
+.md-editor-shell .md-editor-toolbar svg {
+  width: 15px;
+  height: 15px;
+}
+
+.md-editor-shell .md-editor-content {
+  min-height: 180px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: #fafafa;
+  color: #333;
+  font-family: "SF Mono", "Fira Code", "Consolas", "Monaco", monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 10px 12px;
+}
+
+.md-editor-shell .md-editor-content:focus {
+  background: #fff;
+  outline: none;
+}
+
+.md-editor-shell .md-editor-content p,
+.md-editor-shell .md-editor-content ul,
+.md-editor-shell .md-editor-content ol {
+  margin-top: 0;
+}
+
+.md-editor-shell .md-editor-content ul,
+.md-editor-shell .md-editor-content ol {
+  padding-left: 20px;
+}
