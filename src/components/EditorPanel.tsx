@@ -1,7 +1,16 @@
-import { memo, useMemo, type ReactNode } from 'react'
+import { lazy, memo, Suspense, useMemo, type ComponentProps, type ReactNode } from 'react'
 import { DEFAULT_MODULE_TITLES, type CustomResumeModule, type ResumeData, type ResumeModule, type WorkItem } from '../data/resumeData'
-import MarkdownEditor from './MarkdownEditor'
 import './EditorPanel.css'
+
+const MarkdownEditor = lazy(() => import('./MarkdownEditor'))
+
+function DeferredMarkdownEditor(props: ComponentProps<typeof MarkdownEditor>) {
+  return (
+    <Suspense fallback={<div className="md-editor-loading" aria-busy="true">正在加载 Markdown 编辑器...</div>}>
+      <MarkdownEditor {...props} />
+    </Suspense>
+  )
+}
 
 interface EditorPanelProps {
   data: ResumeData
@@ -281,7 +290,7 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
             </div>
             <div className="md-field-wrapper">
               <label className="form-label">在校描述</label>
-              <MarkdownEditor
+              <DeferredMarkdownEditor
                 value={data.education[activeEducationIndex].description || ''}
                 onChange={value => updateEducation(activeEducationIndex, 'description', value)}
                 placeholder="使用 Markdown 编写在校经历..."
@@ -347,7 +356,7 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
             </div>
             <div className="md-field-wrapper">
               <label className="form-label">工作描述</label>
-              <MarkdownEditor
+              <DeferredMarkdownEditor
                 value={data.workExperience[activeWorkIndex].description || ''}
                 onChange={value => updateWork(activeWorkIndex, 'description', value)}
                 placeholder="使用 Markdown 编写工作内容..."
@@ -434,7 +443,7 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
               />
             )}
           >
-            <MarkdownEditor
+            <DeferredMarkdownEditor
               value={data.personalSummary || ''}
               onChange={updateSummary}
               placeholder="使用 Markdown 格式编写个人总结..."
@@ -454,7 +463,7 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
               />
             )}
           >
-            <MarkdownEditor
+            <DeferredMarkdownEditor
               value={activeCustomModule.content || ''}
               onChange={value => updateCustomModuleContent(activeCustomModule.id, value)}
               placeholder="输入这个大模块的内容..."
@@ -601,7 +610,7 @@ function ExperienceEditorSection({
       </div>
       <div className="md-field-wrapper">
         <label className="form-label">经历描述</label>
-        <MarkdownEditor
+        <DeferredMarkdownEditor
           value={item.description || ''}
           onChange={value => onChange('description', value)}
           placeholder="使用 Markdown 编写经历内容..."
