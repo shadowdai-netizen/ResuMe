@@ -6,7 +6,7 @@ import ModuleManagerPanel from './components/ModuleManagerPanel'
 import { resumeData as defaultData } from './data/resumeData'
 import type { ResumeData } from './data/resumeData'
 import { getDefaultActiveModuleId, isActiveModuleIdValid } from './utils/moduleSelection'
-import { createResumeSchemaFile, parseResumeSchemaJson } from './utils/resumeSchema'
+import { createResumeSkillMarkdown, parseResumeSkillMarkdown } from './utils/resumeSchema'
 
 const FONT_OPTIONS = [
   { label: '现代黑体', value: '"PingFang SC", "Microsoft YaHei", sans-serif' },
@@ -74,18 +74,18 @@ function App() {
   }, [previewPageCount])
 
   const handleExportSchema = useCallback(() => {
-    const schemaFile = createResumeSchemaFile(resumeData)
-    const blob = new Blob([JSON.stringify(schemaFile, null, 2)], { type: 'application/json;charset=utf-8' })
+    const markdown = createResumeSkillMarkdown(resumeData)
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     const dateStamp = new Date().toISOString().slice(0, 10)
 
     link.href = url
-    link.download = `resume-schema-${dateStamp}.json`
+    link.download = `resume-skill-${dateStamp}.md`
     link.click()
     window.URL.revokeObjectURL(url)
 
-    setSchemaFeedback({ type: 'success', message: '已导出 JSON schema 文件。' })
+    setSchemaFeedback({ type: 'success', message: '已导出 Markdown Skill 文件。' })
   }, [resumeData])
 
   const handleImportButtonClick = useCallback(() => {
@@ -100,12 +100,12 @@ function App() {
     }
 
     try {
-      const jsonText = await file.text()
-      const importedData = parseResumeSchemaJson(jsonText)
+      const markdownText = await file.text()
+      const importedData = parseResumeSkillMarkdown(markdownText)
       setResumeData(importedData)
       setSchemaFeedback({ type: 'success', message: `已导入 ${file.name}。` })
     } catch (error) {
-      const message = error instanceof Error ? error.message : '导入失败，请检查 JSON 内容。'
+      const message = error instanceof Error ? error.message : '导入失败，请检查 Markdown Skill 内容。'
       setSchemaFeedback({ type: 'error', message })
     } finally {
       event.target.value = ''
@@ -160,14 +160,14 @@ function App() {
                       className="toolbar-btn secondary"
                       onClick={handleImportButtonClick}
                     >
-                      导入 JSON
+                      导入 Markdown
                     </button>
                     <button
                       type="button"
                       className="toolbar-btn secondary"
                       onClick={handleExportSchema}
                     >
-                      导出 JSON
+                      导出 Markdown
                     </button>
                     <button
                       type="button"
@@ -381,7 +381,7 @@ function App() {
       <input
         ref={schemaInputRef}
         type="file"
-        accept=".json,application/json"
+        accept=".md,.markdown,text/markdown,.json,application/json"
         className="visually-hidden-input"
         onChange={handleImportSchema}
       />

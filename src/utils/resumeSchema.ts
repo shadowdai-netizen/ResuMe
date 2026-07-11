@@ -19,6 +19,110 @@ const BUILT_IN_MODULE_TYPES: BuiltInResumeModuleType[] = [
 
 const SCHEMA_VERSION = 1
 const SCHEMA_TYPE = 'cv-preview-resume'
+const RESUME_DATA_START_MARKER = '<!-- cv-preview:resume-data:start -->'
+const RESUME_DATA_END_MARKER = '<!-- cv-preview:resume-data:end -->'
+
+const RESUME_DATA_JSON_SCHEMA = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://cv-preview.local/schema/resume-data.schema.json',
+  title: 'CV Preview ResumeData',
+  type: 'object',
+  required: [
+    'modules',
+    'basicInfo',
+    'education',
+    'workExperience',
+    'projectExperience',
+    'clubExperience',
+    'personalSummary',
+  ],
+  properties: {
+    modules: {
+      type: 'array',
+      description: '模块顺序。basicInfo 必须存在且只能有一个。',
+      items: {
+        oneOf: [
+          {
+            type: 'object',
+            required: ['id', 'type', 'title'],
+            properties: {
+              id: { type: 'string' },
+              type: {
+                enum: ['basicInfo', 'education', 'workExperience', 'projectExperience', 'clubExperience', 'personalSummary'],
+              },
+              title: { type: 'string' },
+            },
+            additionalProperties: false,
+          },
+          {
+            type: 'object',
+            required: ['id', 'type', 'title', 'content'],
+            properties: {
+              id: { type: 'string' },
+              type: { const: 'custom' },
+              title: { type: 'string' },
+              content: { type: 'string' },
+            },
+            additionalProperties: false,
+          },
+        ],
+      },
+    },
+    basicInfo: {
+      type: 'object',
+      required: ['name', 'phone', 'email', 'age', 'gender', 'maritalStatus', 'currentStatus', 'targetCity'],
+      properties: {
+        name: { type: 'string' },
+        phone: { type: 'string' },
+        email: { type: 'string' },
+        age: { type: 'string' },
+        gender: { type: 'string' },
+        maritalStatus: { type: 'string' },
+        currentStatus: { type: 'string' },
+        targetCity: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+    education: { type: 'array', items: { $ref: '#/$defs/educationItem' } },
+    workExperience: { type: 'array', items: { $ref: '#/$defs/experienceItem' } },
+    projectExperience: { type: 'array', items: { $ref: '#/$defs/experienceItem' } },
+    clubExperience: { type: 'array', items: { $ref: '#/$defs/experienceItem' } },
+    personalSummary: { type: 'string' },
+  },
+  $defs: {
+    educationItem: {
+      type: 'object',
+      required: ['school', 'major', 'degree', 'department', 'studyType', 'startDate', 'endDate', 'city', 'description'],
+      properties: {
+        school: { type: 'string' },
+        major: { type: 'string' },
+        degree: { type: 'string' },
+        department: { type: 'string' },
+        studyType: { type: 'string' },
+        startDate: { type: 'string' },
+        endDate: { type: 'string' },
+        city: { type: 'string' },
+        description: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+    experienceItem: {
+      type: 'object',
+      required: ['company', 'position', 'department', 'startDate', 'endDate', 'isCurrent', 'city', 'description'],
+      properties: {
+        company: { type: 'string' },
+        position: { type: 'string' },
+        department: { type: 'string' },
+        startDate: { type: 'string' },
+        endDate: { type: 'string' },
+        isCurrent: { type: 'boolean' },
+        city: { type: 'string' },
+        description: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+  },
+} as const
 
 export interface ResumeSchemaFile {
   type: typeof SCHEMA_TYPE
@@ -34,6 +138,89 @@ export function createResumeSchemaFile(data: ResumeData): ResumeSchemaFile {
     exportedAt: new Date().toISOString(),
     data,
   }
+}
+
+export function createResumeSkillMarkdown(data: ResumeData): string {
+  const schemaJson = JSON.stringify(RESUME_DATA_JSON_SCHEMA, null, 2)
+  const dataJson = JSON.stringify(data, null, 2)
+
+  return [
+    '---',
+    'name: cv-preview-resume-editor',
+    'description: 根据 JSON Schema 修改并维护可渲染的简历数据。',
+    '---',
+    '',
+    '# 简历编辑 Skill',
+    '',
+    '这是一份可被 Codex、Claude 或其它 AI 工具编辑的简历 Skill。请遵循以下规则：',
+    '',
+    '1. 只修改“当前简历数据”区块中的 JSON，不要删除数据区块标记。',
+    '2. 保持 JSON 符合下方 JSON Schema；需要新增模块时，请同步更新 modules 和对应数据字段。',
+    '3. 经历描述、个人总结和自定义模块的 content 使用 Markdown 字符串。',
+    '4. 时间字段使用“YYYY年MM月”，当前经历的 endDate 为空字符串且 isCurrent 为 true。',
+    '5. 返回完整 Markdown 文件，网页会提取当前简历数据区块进行渲染。',
+    '',
+    '## 数据结构定义',
+    '',
+    '- `modules`: 模块顺序和模块标题。basicInfo 固定且只能有一个。',
+    '- `basicInfo`: 姓名、联系方式和个人信息。',
+    '- `education`: 教育经历数组。',
+    '- `workExperience`: 工作经历数组。',
+    '- `projectExperience`: 项目经历数组。',
+    '- `clubExperience`: 社团和组织经历数组。',
+    '- `personalSummary`: 个人总结 Markdown 字符串。',
+    '- `custom` 模块: 使用 `content` 保存自定义 Markdown 内容。',
+    '',
+    '## JSON Schema',
+    '',
+    '```json',
+    schemaJson,
+    '```',
+    '',
+    '## 当前简历数据',
+    '',
+    RESUME_DATA_START_MARKER,
+    '```json',
+    dataJson,
+    '```',
+    RESUME_DATA_END_MARKER,
+    '',
+  ].join('\n')
+}
+
+export function parseResumeSkillMarkdown(markdown: string): ResumeData {
+  const trimmed = markdown.trim()
+
+  // Keep previously exported JSON files importable during the format transition.
+  if (trimmed.startsWith('{')) {
+    return parseResumeSchemaJson(trimmed)
+  }
+
+  const markerPattern =
+    escapeRegExp(RESUME_DATA_START_MARKER) + '\\s*```(?:json)?\\s*([\\s\\S]*?)```\\s*' + escapeRegExp(RESUME_DATA_END_MARKER)
+  const markedSection = markdown.match(new RegExp(markerPattern, 'i'))
+  const dataSection = markedSection?.[1] ?? extractResumeDataCodeBlock(markdown)
+
+  if (!dataSection) {
+    throw new Error('Markdown 中未找到“当前简历数据”JSON 区块。请保留 Skill 模板中的数据标记。')
+  }
+
+  return parseResumeSchemaJson(dataSection.trim())
+}
+
+function extractResumeDataCodeBlock(markdown: string) {
+  const headingMatch = markdown.match(/(?:^|\n)#{1,3}\s*(?:当前简历数据|简历数据|ResumeData)\s*\n/i)
+  if (!headingMatch || headingMatch.index === undefined) {
+    return null
+  }
+
+  const section = markdown.slice(headingMatch.index + headingMatch[0].length)
+  const codeMatch = section.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  return codeMatch?.[1] ?? null
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 export function parseResumeSchemaJson(jsonText: string): ResumeData {
