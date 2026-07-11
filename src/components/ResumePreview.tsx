@@ -9,7 +9,7 @@ const A4_PAGE_HEIGHT = 1123
 const A4_PAGE_MARGIN_MM = 5
 const MM_TO_PX = 96 / 25.4
 const A4_PAGE_MARGIN_PX = A4_PAGE_MARGIN_MM * MM_TO_PX
-const A4_PAGE_CONTENT_HEIGHT = A4_PAGE_HEIGHT - A4_PAGE_MARGIN_PX
+const A4_PAGE_CONTENT_HEIGHT = A4_PAGE_HEIGHT - A4_PAGE_MARGIN_PX * 2
 
 export interface PreviewSettings {
   fontFamily: string
@@ -35,36 +35,80 @@ interface ResumePreviewProps {
 function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleClick, onPageCountChange }: ResumePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null)
   const [previewWidth, setPreviewWidth] = useState(794)
-  const [contentHeight, setContentHeight] = useState(A4_PAGE_HEIGHT)
+  const moduleIds = useMemo(() => data.modules.map(module => module.id), [data.modules])
+  const [pageGroups, setPageGroups] = useState<string[][]>(() => [moduleIds])
+
+  useEffect(() => {
+    setPageGroups([moduleIds])
+  }, [moduleIds])
 
   useEffect(() => {
     const element = previewRef.current
-    const page = element?.querySelector<HTMLElement>('.main')
-    const content = element?.querySelector<HTMLElement>('.content')
 
-    if (!element || !page || !content) {
+    if (!element) {
       return
     }
 
     const updateSize = () => {
       setPreviewWidth(element.clientWidth || 794)
-      const measuredHeight = content.offsetTop + content.scrollHeight
-      setContentHeight(Math.max(A4_PAGE_HEIGHT, measuredHeight))
+
+      const pageContent = element.querySelector<HTMLElement>('.a4-page-content')
+      const moduleElements = Array.from(element.querySelectorAll<HTMLElement>('[data-resume-module]'))
+
+      if (!pageContent || moduleElements.length === 0) {
+        return
+      }
+
+      const availableHeight = pageContent.clientHeight || A4_PAGE_CONTENT_HEIGHT
+      const nextPages: string[][] = []
+      let currentPage: string[] = []
+      let usedHeight = 0
+      let previousMargin = 0
+
+      for (const moduleElement of moduleElements) {
+        const moduleId = moduleElement.dataset.resumeModule
+        if (!moduleId) {
+          continue
+        }
+
+        const moduleHeight = moduleElement.offsetHeight
+        const moduleMargin = parseFloat(getComputedStyle(moduleElement).marginBottom) || 0
+        const nextHeight = currentPage.length === 0
+          ? moduleHeight
+          : usedHeight + previousMargin + moduleHeight
+
+        if (currentPage.length > 0 && nextHeight > availableHeight) {
+          nextPages.push(currentPage)
+          currentPage = []
+          usedHeight = 0
+          previousMargin = 0
+        }
+
+        currentPage.push(moduleId)
+        usedHeight += currentPage.length === 1 ? moduleHeight : previousMargin + moduleHeight
+        previousMargin = moduleMargin
+      }
+
+      if (currentPage.length > 0) {
+        nextPages.push(currentPage)
+      }
+
+      if (!pageGroupsEqual(pageGroups, nextPages)) {
+        setPageGroups(nextPages.length > 0 ? nextPages : [moduleIds])
+      }
     }
 
     updateSize()
     const observer = new ResizeObserver(updateSize)
     observer.observe(element)
-    observer.observe(content)
+    element.querySelectorAll<HTMLElement>('[data-resume-module], .a4-page-content').forEach(node => observer.observe(node))
 
     return () => observer.disconnect()
-  }, [])
+  }, [moduleIds, pageGroups])
 
   const previewScale = Math.min(1, Math.max(0.55, previewWidth / 794))
-  const pageCount = Math.max(
-    1,
-    Math.ceil((contentHeight - A4_PAGE_MARGIN_PX) / A4_PAGE_CONTENT_HEIGHT),
-  )
+  const pageCount = Math.max(1, pageGroups.length)
+  const contentHeight = pageCount * A4_PAGE_HEIGHT
 
   useEffect(() => {
     onPageCountChange?.(pageCount)
@@ -74,7 +118,7 @@ function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleCl
     <div className="resume-preview-frame">
       <div className="resume-preview-status" aria-live="polite">
         <span>真实 A4 分页预览</span>
-        <span>共 {pageCount} 页 · 下边距 {A4_PAGE_MARGIN_MM}mm</span>
+        <span>共 {pageCount} 页 · 上下边距 {A4_PAGE_MARGIN_MM}mm</span>
       </div>
       <div
         ref={previewRef}
@@ -92,7 +136,7 @@ function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleCl
               activeModule={activeModule}
               onModuleHover={onModuleHover}
               onModuleClick={onModuleClick}
-              pageCount={pageCount}
+              pageGroups={pageGroups}
             />
           </div>
         </div>
@@ -102,7 +146,7 @@ function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleCl
 }
 
 type ResumePageProps = ResumePreviewProps & {
-  pageCount: number
+  pageGroups: string[][]
 }
 
 function ResumePage({
@@ -111,10 +155,9 @@ function ResumePage({
   activeModule,
   onModuleHover,
   onModuleClick,
-  pageCount,
+  pageGroups,
 }: ResumePageProps) {
   const themeColor = settings.textColor
-  const pageMargin = A4_PAGE_MARGIN_MM
   const moduleSpacing = settings.onePageMode
     ? Math.max(1.5, Number((settings.moduleSpacing * 0.48).toFixed(1)))
     : settings.moduleSpacing
@@ -137,7 +180,7 @@ function ResumePage({
         lineHeight,
         fontSize: `${settings.fontSize}px`,
         color: settings.textColor,
-        padding: `${pageMargin}mm`,
+        padding: 0,
       }}
     >
       {/* Background pattern */}
@@ -147,45 +190,51 @@ function ResumePage({
         alt=""
       />
 
-      <div className="page-break-guides" aria-hidden="true">
-        {Array.from({ length: pageCount }, (_, index) => (
-          <div
-            key={index}
-            className="page-break-guide"
-            style={{ top: `${(index + 1) * A4_PAGE_HEIGHT - A4_PAGE_MARGIN_PX}px` }}
-          >
-            <span>第 {index + 1} 页内容结束</span>
-          </div>
-        ))}
-      </div>
+      {pageGroups.map((pageModuleIds, pageIndex) => {
+        const modulesById = new Map(data.modules.map(module => [module.id, module]))
 
-      <div
-        className="content main-page-0"
-        style={{ padding: settings.onePageMode ? '18px 40px' : '32px 40px' }}
-      >
-        <div style={{ height: '100%', maxWidth: '100%', overflow: 'hidden' }}>
-          <div className="content-scroll" style={{ marginTop: 0, position: 'relative' }}>
-            {data.modules.map(module => renderModuleSection({
-              module,
-              data,
-              activeModule,
-              onModuleHover,
-              onModuleClick,
-              themeColor,
-              mutedColor,
-              subtleColor,
-              pageMargin,
-              moduleSpacing,
-              moduleTitleSpacing,
-              itemSpacing,
-              scale,
-              titleStyle: settings.titleStyle,
-              profileStyle: settings.profileStyle,
-              titleBarColor: settings.titleBarColor,
-            }))}
+        return (
+          <div className={`a4-page-sheet${pageIndex === pageGroups.length - 1 ? ' last' : ''}`} key={`page-${pageIndex}`}>
+            <div className="a4-page-margin-placeholder top">
+              <span>顶部边距 {A4_PAGE_MARGIN_MM}mm</span>
+            </div>
+            <div
+              className="content a4-page-content"
+              style={{ padding: '0 40px' }}
+            >
+              <div style={{ height: '100%', maxWidth: '100%', overflow: 'hidden' }}>
+                <div className="content-scroll" style={{ marginTop: 0, position: 'relative' }}>
+                  {pageModuleIds.map(moduleId => {
+                    const module = modulesById.get(moduleId)
+                    if (!module) return null
+
+                    return renderModuleSection({
+                      module,
+                      data,
+                      activeModule,
+                      onModuleHover,
+                      onModuleClick,
+                      themeColor,
+                      mutedColor,
+                      subtleColor,
+                      moduleSpacing,
+                      moduleTitleSpacing,
+                      itemSpacing,
+                      scale,
+                      titleStyle: settings.titleStyle,
+                      profileStyle: settings.profileStyle,
+                      titleBarColor: settings.titleBarColor,
+                    })
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="a4-page-margin-placeholder bottom">
+              <span>底部边距 {A4_PAGE_MARGIN_MM}mm</span>
+            </div>
           </div>
-        </div>
-      </div>
+        )
+      })}
     </div>
   )
 }
@@ -199,7 +248,6 @@ function renderModuleSection({
   themeColor,
   mutedColor,
   subtleColor,
-  pageMargin,
   moduleSpacing,
   moduleTitleSpacing,
   itemSpacing,
@@ -216,7 +264,6 @@ function renderModuleSection({
   themeColor: string
   mutedColor: string
   subtleColor: string
-  pageMargin: number
   moduleSpacing: number
   moduleTitleSpacing: number
   itemSpacing: number
@@ -234,6 +281,7 @@ function renderModuleSection({
         activeModule={activeModule}
         onHover={onModuleHover}
         onClick={onModuleClick}
+        moduleBlock
       >
         <ProfileSection
           data={data}
@@ -251,6 +299,7 @@ function renderModuleSection({
     return (
       <SectionBlock
         key={module.type}
+        moduleId={module.id}
         type="edus"
         title={module.title}
         themeColor={themeColor}
@@ -288,6 +337,7 @@ function renderModuleSection({
     return (
       <SectionBlock
         key={module.type}
+        moduleId={module.id}
         type="works"
         title={module.title}
         themeColor={themeColor}
@@ -328,6 +378,7 @@ function renderModuleSection({
     return (
       <SectionBlock
         key={module.type}
+        moduleId={module.id}
         type={module.type}
         title={module.title}
         themeColor={themeColor}
@@ -365,6 +416,7 @@ function renderModuleSection({
     return (
       <SectionBlock
         key={module.id}
+        moduleId={module.id}
         type="custom-18138362"
         title={module.title}
         themeColor={themeColor}
@@ -396,6 +448,7 @@ function renderModuleSection({
     return (
       <SectionBlock
         key={module.id}
+        moduleId={module.id}
         type={module.id}
         title={module.title}
         themeColor={themeColor}
@@ -429,6 +482,7 @@ function ModuleWrapper({
   activeModule,
   onHover,
   onClick,
+  moduleBlock = false,
 }: {
   moduleId: string
   label: string
@@ -436,12 +490,14 @@ function ModuleWrapper({
   activeModule: string | null
   onHover: (id: string | null) => void
   onClick: (id: string) => void
+  moduleBlock?: boolean
 }) {
   const isActive = activeModule === moduleId
 
   return (
     <div
-      className={`module-hoverable${isActive ? ' active-editing' : ''}`}
+      className={`module-hoverable${moduleBlock ? ' resume-module-block' : ''}${isActive ? ' active-editing' : ''}`}
+      data-resume-module={moduleBlock ? moduleId : undefined}
       onMouseEnter={() => onHover(moduleId)}
       onMouseLeave={() => onHover(null)}
       onClick={() => onClick(moduleId)}
@@ -594,7 +650,8 @@ function formatSalaryRange(min: string, max: string) {
   return `${max}以内`
 }
 
-function SectionBlock({ type, title, children, themeColor, subtleColor, moduleSpacing, moduleTitleSpacing, scale, titleStyle, titleBarColor }: {
+function SectionBlock({ moduleId, type, title, children, themeColor, subtleColor, moduleSpacing, moduleTitleSpacing, scale, titleStyle, titleBarColor }: {
+  moduleId: string
   type: string
   title: string
   children: React.ReactNode
@@ -607,7 +664,12 @@ function SectionBlock({ type, title, children, themeColor, subtleColor, moduleSp
   titleBarColor: string
 }) {
   return (
-    <div id={type} className="option option-strip option-wrapper-basic" style={{ marginBottom: `${moduleSpacing}mm` }}>
+    <div
+      id={type}
+      className="option option-strip option-wrapper-basic resume-module-block"
+      data-resume-module={moduleId}
+      style={{ marginBottom: `${moduleSpacing}mm` }}
+    >
       <div className="module-title-wrapper" style={{ marginBottom: `${moduleTitleSpacing}mm`, backgroundColor: 'unset' }}>
         <StripTitle title={title} themeColor={themeColor} subtleColor={subtleColor} scale={scale} titleStyle={titleStyle} titleBarColor={titleBarColor} />
       </div>
@@ -856,6 +918,15 @@ function withAlpha(hex: string, alpha: number) {
 
 function settingsTextColor(color: string) {
   return withAlpha(color, 0.82)
+}
+
+function pageGroupsEqual(left: string[][], right: string[][]) {
+  if (left.length !== right.length) return false
+
+  return left.every((page, pageIndex) => (
+    page.length === right[pageIndex].length
+    && page.every((moduleId, moduleIndex) => moduleId === right[pageIndex][moduleIndex])
+  ))
 }
 
 export default memo(ResumePreview)

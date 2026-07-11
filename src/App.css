@@ -784,6 +784,67 @@
   position: relative;
 }
 
+.a4-page-sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 1123px;
+  width: 794px;
+  height: 1123px;
+  overflow: visible;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  break-after: page;
+  page-break-after: always;
+}
+
+.a4-page-sheet.last {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+.a4-page-margin-placeholder {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 18.9px;
+  height: 18.9px;
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.13), rgba(148, 163, 184, 0.04));
+  border-color: rgba(100, 116, 139, 0.16);
+  border-style: dashed;
+}
+
+.a4-page-margin-placeholder.top {
+  border-bottom-width: 1px;
+}
+
+.a4-page-margin-placeholder.bottom {
+  border-top-width: 1px;
+}
+
+.a4-page-margin-placeholder span {
+  position: absolute;
+  right: 10px;
+  color: rgba(71, 85, 105, 0.62);
+  font-size: 9px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.a4-page-margin-placeholder.bottom span {
+  top: 0;
+}
+
+.a4-page-content {
+  flex: 0 0 1085.2px;
+  width: 794px;
+  height: 1085.2px;
+  overflow: visible;
+}
+
+.resume-module-block {
+  display: flow-root;
+}
+
 .page-break-guides {
   position: absolute;
   inset: 0;
@@ -1121,6 +1182,32 @@
     min-height: 297mm;
     padding: 0;
     margin: 0 auto;
+  }
+
+  .a4-page-sheet {
+    width: 210mm;
+    height: 297mm;
+    flex-basis: 297mm;
+    box-shadow: none;
+    background: #fff;
+  }
+
+  .a4-page-margin-placeholder {
+    flex-basis: 5mm;
+    height: 5mm;
+    background: #fff;
+    border: none;
+  }
+
+  .a4-page-margin-placeholder span {
+    display: none;
+  }
+
+  .a4-page-content {
+    flex-basis: 287mm;
+    width: 210mm;
+    height: 287mm;
+    overflow: visible;
   }
 
   /* 隐藏 hover 交互提示 */
