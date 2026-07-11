@@ -190,7 +190,7 @@ function App() {
     const dateStamp = new Date().toISOString().slice(0, 10)
 
     link.href = url
-    link.download = `resume-skill-${dateStamp}.md`
+    link.download = `简历-${dateStamp}.md`
     link.click()
     window.URL.revokeObjectURL(url)
 
