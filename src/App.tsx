@@ -3,10 +3,18 @@ import './App.css'
 import ResumePreview, { type PreviewSettings, type ProfileStyleVariant, type TitleStyleVariant } from './components/ResumePreview'
 import EditorPanel from './components/EditorPanel'
 import ModuleManagerPanel from './components/ModuleManagerPanel'
+import ResumeLibraryPanel from './components/ResumeLibraryPanel'
 import { resumeData as defaultData } from './data/resumeData'
 import type { ResumeData } from './data/resumeData'
 import { getDefaultActiveModuleId, isActiveModuleIdValid } from './utils/moduleSelection'
-import { createResumeSkillMarkdown, parseResumeSkillMarkdown } from './utils/resumeSchema'
+import { createResumeSkillMarkdown, parseResumeSchemaJson, parseResumeSkillMarkdown } from './utils/resumeSchema'
+import {
+  createResumeId,
+  deleteStoredResume,
+  listStoredResumes,
+  saveStoredResume,
+  type StoredResume,
+} from './utils/resumeStorage'
 
 const FONT_OPTIONS = [
   { label: '现代黑体', value: '"PingFang SC", "Microsoft YaHei", sans-serif' },
@@ -31,6 +39,35 @@ const PROFILE_STYLE_OPTIONS: Array<{ value: ProfileStyleVariant; label: string; 
 
 const COLOR_PRESETS = ['#111827', '#1f3a5f', '#14532d', '#7c2d12', '#4c1d95']
 const TITLE_BAR_COLOR_PRESETS = ['#111827', '#1e3a5f', '#0f766e', '#9a3412', '#be123c', '#4d7c0f', '#a16207']
+const DEFAULT_PREVIEW_SETTINGS: PreviewSettings = {
+  fontFamily: FONT_OPTIONS[0].value,
+  fontSize: 12,
+  lineHeight: 1.75,
+  textColor: '#111827',
+  moduleSpacing: 5,
+  pageVerticalMargin: 5,
+  pageHorizontalMargin: 10,
+  titleStyle: 'classic',
+  profileStyle: 'classic',
+  onePageMode: false,
+  titleBarColor: '#111827',
+}
+
+function normalizeStoredResume(resume: StoredResume): StoredResume {
+  let data = resume.data
+
+  try {
+    data = parseResumeSchemaJson(JSON.stringify(resume.data))
+  } catch {
+    // Keep the record readable even if an older version stored incomplete data.
+  }
+
+  return {
+    ...resume,
+    data,
+    config: { ...DEFAULT_PREVIEW_SETTINGS, ...resume.config },
+  }
+}
 
 function App() {
   const resumeRef = useRef<HTMLDivElement>(null)
@@ -40,17 +77,14 @@ function App() {
   const [activePreviewTab, setActivePreviewTab] = useState<'typography' | 'titles'>('typography')
   const [schemaFeedback, setSchemaFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [previewPageCount, setPreviewPageCount] = useState(1)
-  const [previewSettings, setPreviewSettings] = useState<PreviewSettings>({
-    fontFamily: FONT_OPTIONS[0].value,
-    fontSize: 12,
-    lineHeight: 1.75,
-    textColor: '#111827',
-    moduleSpacing: 5,
-    titleStyle: 'classic',
-    profileStyle: 'classic',
-    onePageMode: false,
-    titleBarColor: '#111827',
-  })
+  const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(DEFAULT_PREVIEW_SETTINGS)
+  const [storedResumes, setStoredResumes] = useState<StoredResume[]>([])
+  const [activeResumeId, setActiveResumeId] = useState<string | null>(null)
+  const [isResumeLibraryOpen, setIsResumeLibraryOpen] = useState(false)
+  const [storageLoading, setStorageLoading] = useState(true)
+  const [storageReady, setStorageReady] = useState(false)
+  const storageInitializedRef = useRef(false)
+  const activeStoredResumeRef = useRef<StoredResume | null>(null)
 
   const handleExportPDF = async () => {
     // 使用浏览器原生打印，用户可选择"另存为 PDF"
@@ -72,6 +106,81 @@ function App() {
 
     setPreviewSettings(prev => ({ ...prev, onePageMode: true }))
   }, [previewPageCount])
+
+  const handleResetPreviewSettings = useCallback(() => {
+    setPreviewSettings(DEFAULT_PREVIEW_SETTINGS)
+  }, [])
+
+  const handleSelectResume = useCallback((resume: StoredResume) => {
+    activeStoredResumeRef.current = resume
+    setActiveResumeId(resume.id)
+    setResumeData(resume.data)
+    setPreviewSettings(resume.config)
+    setActiveModule(getDefaultActiveModuleId(resume.data))
+    setIsResumeLibraryOpen(false)
+  }, [])
+
+  const handleCreateResume = useCallback(async () => {
+    const name = window.prompt('请输入新简历名称', `简历 ${storedResumes.length + 1}`)?.trim()
+    if (!name) return
+
+    setStorageLoading(true)
+    try {
+      const resume = await saveStoredResume(createResumeId(), name, defaultData, DEFAULT_PREVIEW_SETTINGS)
+      activeStoredResumeRef.current = resume
+      setStoredResumes(previous => [resume, ...previous])
+      setActiveResumeId(resume.id)
+      setResumeData(resume.data)
+      setPreviewSettings(resume.config)
+      setActiveModule(getDefaultActiveModuleId(resume.data))
+      setIsResumeLibraryOpen(false)
+    } catch (error) {
+      setSchemaFeedback({ type: 'error', message: error instanceof Error ? error.message : '新建简历失败。' })
+    } finally {
+      setStorageLoading(false)
+    }
+  }, [storedResumes.length])
+
+  const handleRenameResume = useCallback(async (resume: StoredResume) => {
+    const name = window.prompt('请输入新的简历名称', resume.name)?.trim()
+    if (!name || name === resume.name) return
+
+    setStorageLoading(true)
+    try {
+      const renamed = await saveStoredResume(
+        resume.id,
+        name,
+        resume.data,
+        resume.config,
+        { createdAt: resume.createdAt, updatedAt: Date.now() },
+      )
+      activeStoredResumeRef.current = activeResumeId === resume.id ? renamed : activeStoredResumeRef.current
+      setStoredResumes(previous => previous.map(item => item.id === renamed.id ? renamed : item))
+    } catch (error) {
+      setSchemaFeedback({ type: 'error', message: error instanceof Error ? error.message : '重命名简历失败。' })
+    } finally {
+      setStorageLoading(false)
+    }
+  }, [activeResumeId])
+
+  const handleDeleteResume = useCallback(async (resume: StoredResume) => {
+    if (storedResumes.length <= 1 || !window.confirm(`确定删除“${resume.name}”吗？`)) return
+
+    setStorageLoading(true)
+    try {
+      await deleteStoredResume(resume.id)
+      const remaining = storedResumes.filter(item => item.id !== resume.id)
+      setStoredResumes(remaining)
+
+      if (activeResumeId === resume.id) {
+        handleSelectResume(remaining[0])
+      }
+    } catch (error) {
+      setSchemaFeedback({ type: 'error', message: error instanceof Error ? error.message : '删除简历失败。' })
+    } finally {
+      setStorageLoading(false)
+    }
+  }, [activeResumeId, handleSelectResume, storedResumes])
 
   const handleExportSchema = useCallback(() => {
     const markdown = createResumeSkillMarkdown(resumeData)
@@ -120,6 +229,58 @@ function App() {
     setActiveModule(getDefaultActiveModuleId(resumeData))
   }, [resumeData, activeModule])
 
+  useEffect(() => {
+    if (storageInitializedRef.current) return
+    storageInitializedRef.current = true
+
+    const loadResumes = async () => {
+      try {
+        const resumes = (await listStoredResumes()).map(normalizeStoredResume)
+        if (resumes.length > 0) {
+          setStoredResumes(resumes)
+          handleSelectResume(resumes[0])
+        } else {
+          const firstResume = await saveStoredResume(createResumeId(), '我的简历', defaultData, DEFAULT_PREVIEW_SETTINGS)
+          activeStoredResumeRef.current = firstResume
+          setStoredResumes([firstResume])
+          setActiveResumeId(firstResume.id)
+        }
+        setStorageReady(true)
+      } catch (error) {
+        setSchemaFeedback({ type: 'error', message: error instanceof Error ? error.message : '无法初始化本地简历库。' })
+      } finally {
+        setStorageLoading(false)
+      }
+    }
+
+    void loadResumes()
+  }, [handleSelectResume])
+
+  useEffect(() => {
+    if (!storageReady || !activeResumeId || !activeStoredResumeRef.current) return
+
+    const timer = window.setTimeout(async () => {
+      const current = activeStoredResumeRef.current
+      if (!current || current.id !== activeResumeId) return
+
+      try {
+        const saved = await saveStoredResume(
+          current.id,
+          current.name,
+          resumeData,
+          previewSettings,
+          { createdAt: current.createdAt, updatedAt: Date.now() },
+        )
+        activeStoredResumeRef.current = saved
+        setStoredResumes(previous => previous.map(item => item.id === saved.id ? saved : item))
+      } catch (error) {
+        setSchemaFeedback({ type: 'error', message: error instanceof Error ? error.message : '自动保存简历失败。' })
+      }
+    }, 350)
+
+    return () => window.clearTimeout(timer)
+  }, [activeResumeId, previewSettings, resumeData, storageReady])
+
   return (
     <div className="preview-stage-shell">
       <div className="app-layout">
@@ -135,6 +296,18 @@ function App() {
         <div className="preview-stage">
           <div className="preview-stage-main">
             <div className="resume-preview-wrapper">
+              {isResumeLibraryOpen ? (
+                <ResumeLibraryPanel
+                  resumes={storedResumes}
+                  activeResumeId={activeResumeId}
+                  loading={storageLoading}
+                  onCreate={handleCreateResume}
+                  onSelect={handleSelectResume}
+                  onRename={handleRenameResume}
+                  onDelete={handleDeleteResume}
+                  onClose={() => setIsResumeLibraryOpen(false)}
+                />
+              ) : null}
               <div className="preview-config-shell">
                 <div className="preview-tabbar">
                   <div className="preview-tabs">
@@ -155,6 +328,13 @@ function App() {
                   </div>
 
                   <div className="toolbar">
+                    <button
+                      type="button"
+                      className="toolbar-btn secondary"
+                      onClick={() => setIsResumeLibraryOpen(previous => !previous)}
+                    >
+                      简历管理
+                    </button>
                     <button
                       type="button"
                       className="toolbar-btn secondary"
@@ -184,6 +364,14 @@ function App() {
                       title={previewSettings.onePageMode ? '已启用一页模式' : '仅在简历超过一页时可用'}
                     >
                       {previewSettings.onePageMode ? '已压缩一页' : '一键一页'}
+                    </button>
+                    <button
+                      type="button"
+                      className="toolbar-btn secondary"
+                      onClick={handleResetPreviewSettings}
+                      title="恢复默认排版、边距和标题样式"
+                    >
+                      重置配置
                     </button>
                   </div>
                 </div>
@@ -257,6 +445,38 @@ function App() {
                             onChange={event => setPreviewSettings(prev => ({ ...prev, moduleSpacing: Number(event.target.value) }))}
                           />
                           <span className="preview-range-value">{previewSettings.moduleSpacing.toFixed(1)}mm</span>
+                        </div>
+                      </label>
+
+                      <label className="preview-control">
+                        <span className="preview-control-label">A4 上下边距</span>
+                        <div className="preview-range-row">
+                          <input
+                            className="preview-range"
+                            type="range"
+                            min="0"
+                            max="20"
+                            step="0.5"
+                            value={previewSettings.pageVerticalMargin}
+                            onChange={event => setPreviewSettings(prev => ({ ...prev, pageVerticalMargin: Number(event.target.value) }))}
+                          />
+                          <span className="preview-range-value">{previewSettings.pageVerticalMargin.toFixed(1)}mm</span>
+                        </div>
+                      </label>
+
+                      <label className="preview-control">
+                        <span className="preview-control-label">A4 左右边距</span>
+                        <div className="preview-range-row">
+                          <input
+                            className="preview-range"
+                            type="range"
+                            min="0"
+                            max="30"
+                            step="0.5"
+                            value={previewSettings.pageHorizontalMargin}
+                            onChange={event => setPreviewSettings(prev => ({ ...prev, pageHorizontalMargin: Number(event.target.value) }))}
+                          />
+                          <span className="preview-range-value">{previewSettings.pageHorizontalMargin.toFixed(1)}mm</span>
                         </div>
                       </label>
 

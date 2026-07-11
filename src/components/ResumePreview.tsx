@@ -6,10 +6,9 @@ export type TitleStyleVariant = 'classic' | 'banner' | 'underline' | 'capsule'
 export type ProfileStyleVariant = 'classic' | 'centered' | 'card' | 'split'
 
 const A4_PAGE_HEIGHT = 1123
-const A4_PAGE_MARGIN_MM = 5
 const MM_TO_PX = 96 / 25.4
-const A4_PAGE_MARGIN_PX = A4_PAGE_MARGIN_MM * MM_TO_PX
-const A4_PAGE_CONTENT_HEIGHT = A4_PAGE_HEIGHT - A4_PAGE_MARGIN_PX * 2
+const DEFAULT_PAGE_MARGIN_MM = 5
+const DEFAULT_A4_PAGE_CONTENT_HEIGHT = A4_PAGE_HEIGHT - DEFAULT_PAGE_MARGIN_MM * MM_TO_PX * 2
 
 export interface PreviewSettings {
   fontFamily: string
@@ -17,6 +16,8 @@ export interface PreviewSettings {
   lineHeight: number
   textColor: string
   moduleSpacing: number
+  pageVerticalMargin: number
+  pageHorizontalMargin: number
   titleStyle: TitleStyleVariant
   profileStyle: ProfileStyleVariant
   onePageMode: boolean
@@ -59,7 +60,7 @@ function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleCl
         return
       }
 
-      const availableHeight = pageContent.clientHeight || A4_PAGE_CONTENT_HEIGHT
+      const availableHeight = pageContent.clientHeight || DEFAULT_A4_PAGE_CONTENT_HEIGHT
       const nextPages: string[][] = []
       let currentPage: string[] = []
       let usedHeight = 0
@@ -109,6 +110,8 @@ function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleCl
   const previewScale = Math.min(1, Math.max(0.55, previewWidth / 794))
   const pageCount = Math.max(1, pageGroups.length)
   const contentHeight = pageCount * A4_PAGE_HEIGHT
+  const pageVerticalMargin = Math.max(0, settings.pageVerticalMargin)
+  const pageHorizontalMargin = Math.max(0, settings.pageHorizontalMargin)
 
   useEffect(() => {
     onPageCountChange?.(pageCount)
@@ -118,7 +121,7 @@ function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleCl
     <div className="resume-preview-frame">
       <div className="resume-preview-status" aria-live="polite">
         <span>真实 A4 分页预览</span>
-        <span>共 {pageCount} 页 · 上下边距 {A4_PAGE_MARGIN_MM}mm</span>
+        <span>共 {pageCount} 页 · 上下 {pageVerticalMargin.toFixed(1)}mm / 左右 {pageHorizontalMargin.toFixed(1)}mm</span>
       </div>
       <div
         ref={previewRef}
@@ -158,6 +161,9 @@ function ResumePage({
   pageGroups,
 }: ResumePageProps) {
   const themeColor = settings.textColor
+  const pageMarginPx = Math.max(0, settings.pageVerticalMargin) * MM_TO_PX
+  const pageHorizontalMarginPx = Math.max(0, settings.pageHorizontalMargin) * MM_TO_PX
+  const pageContentHeight = Math.max(0, A4_PAGE_HEIGHT - pageMarginPx * 2)
   const moduleSpacing = settings.onePageMode
     ? Math.max(1.5, Number((settings.moduleSpacing * 0.48).toFixed(1)))
     : settings.moduleSpacing
@@ -170,7 +176,7 @@ function ResumePage({
     ? Math.max(1.3, Number((settings.lineHeight * 0.86).toFixed(2)))
     : settings.lineHeight
   const mutedColor = withAlpha(settings.textColor, 0.7)
-  const subtleColor = withAlpha(settings.textColor, 0.2)
+  const subtleColor = withAlpha(settings.titleBarColor, 0.2)
 
   return (
     <div
@@ -195,12 +201,19 @@ function ResumePage({
 
         return (
           <div className={`a4-page-sheet${pageIndex === pageGroups.length - 1 ? ' last' : ''}`} key={`page-${pageIndex}`}>
-            <div className="a4-page-margin-placeholder top">
-              <span>顶部边距 {A4_PAGE_MARGIN_MM}mm</span>
+            <div
+              className="a4-page-margin-placeholder top"
+              style={{ height: `${pageMarginPx}px`, flexBasis: `${pageMarginPx}px` }}
+            >
+              <span>上下边距 {settings.pageVerticalMargin.toFixed(1)}mm</span>
             </div>
             <div
               className="content a4-page-content"
-              style={{ padding: '0 40px' }}
+              style={{
+                height: `${pageContentHeight}px`,
+                flexBasis: `${pageContentHeight}px`,
+                padding: `0 ${pageHorizontalMarginPx}px`,
+              }}
             >
               <div style={{ height: '100%', maxWidth: '100%', overflow: 'hidden' }}>
                 <div className="content-scroll" style={{ marginTop: 0, position: 'relative' }}>
@@ -229,8 +242,11 @@ function ResumePage({
                 </div>
               </div>
             </div>
-            <div className="a4-page-margin-placeholder bottom">
-              <span>底部边距 {A4_PAGE_MARGIN_MM}mm</span>
+            <div
+              className="a4-page-margin-placeholder bottom"
+              style={{ height: `${pageMarginPx}px`, flexBasis: `${pageMarginPx}px` }}
+            >
+              <span>上下边距 {settings.pageVerticalMargin.toFixed(1)}mm</span>
             </div>
           </div>
         )
@@ -720,8 +736,8 @@ function StripTitle({
   if (titleStyle === 'underline') {
     return (
       <div className="strip-title-wrapper underline" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
-        <span className="title" style={{ color: themeColor, fontSize: sizePx(15, scale), fontWeight: 'bold', letterSpacing: '1px' }}>{title}</span>
-        <div className="bg" style={{ background: themeColor, width: sizePx(52, scale), height: '3px', borderRadius: '999px' }}></div>
+        <span className="title" style={{ color: titleBarColor, fontSize: sizePx(15, scale), fontWeight: 'bold', letterSpacing: '1px' }}>{title}</span>
+        <div className="bg" style={{ background: titleBarColor, width: sizePx(52, scale), height: '3px', borderRadius: '999px' }}></div>
       </div>
     )
   }
@@ -757,7 +773,7 @@ function StripTitle({
   return (
     <div className="strip-title-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
       <div className="line" style={{ background: titleBarColor, width: '4px', height: sizePx(14, scale), borderRadius: '1px' }}></div>
-      <span className="title" style={{ color: themeColor, fontSize: sizePx(14, scale), fontWeight: 'bold' }}>{title}</span>
+      <span className="title" style={{ color: titleBarColor, fontSize: sizePx(14, scale), fontWeight: 'bold' }}>{title}</span>
       <div className="bg" style={{ background: subtleColor, flex: 1, height: '1px' }}></div>
     </div>
   )

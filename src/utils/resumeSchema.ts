@@ -143,6 +143,8 @@ const RESUME_DATA_JSON_SCHEMA = {
   },
 } as const
 
+export const RESUME_DATA_SCHEMA = RESUME_DATA_JSON_SCHEMA
+
 export interface ResumeSchemaFile {
   type: typeof SCHEMA_TYPE
   schemaVersion: typeof SCHEMA_VERSION

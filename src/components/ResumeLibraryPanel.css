@@ -1,0 +1,142 @@
+.resume-library-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 30;
+  width: min(340px, calc(100% - 24px));
+  padding: 16px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.resume-library-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.resume-library-header h3 {
+  margin: 0 0 4px;
+  color: #111827;
+  font-size: 16px;
+}
+
+.resume-library-header span,
+.resume-library-select span {
+  color: #667085;
+  font-size: 11px;
+}
+
+.resume-library-close {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 50%;
+  background: #fff;
+  color: #667085;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.resume-library-create {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #111827;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resume-library-create:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.resume-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(430px, 55vh);
+  margin-top: 12px;
+  overflow-y: auto;
+}
+
+.resume-library-empty {
+  padding: 20px 8px;
+  color: #667085;
+  font-size: 12px;
+  text-align: center;
+}
+
+.resume-library-item {
+  border: 1px solid rgba(17, 24, 39, 0.09);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.resume-library-item.active {
+  border-color: rgba(74, 108, 247, 0.48);
+  box-shadow: 0 5px 14px rgba(74, 108, 247, 0.12);
+}
+
+.resume-library-select {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 11px 12px 7px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.resume-library-select strong {
+  overflow: hidden;
+  max-width: 100%;
+  color: #111827;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resume-library-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 12px 10px;
+}
+
+.resume-library-actions button {
+  padding: 5px 8px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 8px;
+  background: #fff;
+  color: #475467;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.resume-library-actions button:hover:not(:disabled) {
+  border-color: rgba(74, 108, 247, 0.4);
+  color: #3155e7;
+}
+
+.resume-library-actions button.danger:hover:not(:disabled) {
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #dc2626;
+}
+
+.resume-library-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
