@@ -702,7 +702,7 @@ function StripTitle({
           className="title"
           style={{
             color: '#fff',
-            background: themeColor,
+            background: titleBarColor,
             fontSize: sizePx(14, scale),
             fontWeight: 'bold',
             padding: '5px 12px',
@@ -756,7 +756,7 @@ function StripTitle({
 
   return (
     <div className="strip-title-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <div className="line" style={{ background: themeColor, width: '4px', height: sizePx(14, scale), borderRadius: '1px' }}></div>
+      <div className="line" style={{ background: titleBarColor, width: '4px', height: sizePx(14, scale), borderRadius: '1px' }}></div>
       <span className="title" style={{ color: themeColor, fontSize: sizePx(14, scale), fontWeight: 'bold' }}>{title}</span>
       <div className="bg" style={{ background: subtleColor, flex: 1, height: '1px' }}></div>
     </div>

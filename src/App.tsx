@@ -312,7 +312,7 @@ function App() {
                         <div className="style-picker-heading">
                           <span className="style-picker-label">大模块标题样式</span>
                           <div className="title-bar-color-control">
-                            <span>横条底色</span>
+                            <span>标题底色</span>
                             <div className="title-bar-color-presets">
                               {TITLE_BAR_COLOR_PRESETS.map(color => (
                                 <button
