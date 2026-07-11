@@ -214,6 +214,24 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
               <FormField label="婚姻状况" value={data.basicInfo.maritalStatus} onChange={value => updateBasicInfo('maritalStatus', value)} />
               <FormField label="当前状态" value={data.basicInfo.currentStatus} onChange={value => updateBasicInfo('currentStatus', value)} />
               <FormField label="意向城市" value={data.basicInfo.targetCity} onChange={value => updateBasicInfo('targetCity', value)} />
+              <FormField label="期望职位" value={data.basicInfo.expectedPosition} onChange={value => updateBasicInfo('expectedPosition', value)} />
+              <FormField label="最低薪资" value={data.basicInfo.salaryMin} onChange={value => updateBasicInfo('salaryMin', value)} />
+              <FormField label="最高薪资" value={data.basicInfo.salaryMax} onChange={value => updateBasicInfo('salaryMax', value)} />
+              <FormField label="个人网站" value={data.basicInfo.personalWebsite} onChange={value => updateBasicInfo('personalWebsite', value)} />
+              <FormField label="微信" value={data.basicInfo.wechat} onChange={value => updateBasicInfo('wechat', value)} />
+              <FormField label="LinkedIn" value={data.basicInfo.linkedin} onChange={value => updateBasicInfo('linkedin', value)} />
+              <FormField label="身高" value={data.basicInfo.height} onChange={value => updateBasicInfo('height', value)} />
+              <FormField label="体重" value={data.basicInfo.weight} onChange={value => updateBasicInfo('weight', value)} />
+              <FormField label="民族" value={data.basicInfo.ethnicity} onChange={value => updateBasicInfo('ethnicity', value)} />
+              <FormField label="籍贯" value={data.basicInfo.nativePlace} onChange={value => updateBasicInfo('nativePlace', value)} />
+              <FormField label="星座" value={data.basicInfo.zodiac} onChange={value => updateBasicInfo('zodiac', value)} />
+              <FormField label="MBTI" value={data.basicInfo.mbti} onChange={value => updateBasicInfo('mbti', value)} />
+              <FormSelect
+                label="政治面貌"
+                value={data.basicInfo.politicalStatus}
+                options={['中共党员', '中共预备党员', '共青团员', '群众']}
+                onChange={value => updateBasicInfo('politicalStatus', value)}
+              />
             </div>
           </EditorSection>
         ) : null}
@@ -614,6 +632,32 @@ function FormField({
         onChange={event => onChange(event.target.value)}
         disabled={disabled}
       />
+    </div>
+  )
+}
+
+function FormSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  value: string
+  options: string[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className="form-field">
+      <label className="form-label">{label}</label>
+      <select className="form-select" value={value} onChange={event => onChange(event.target.value)}>
+        <option value="">请选择</option>
+        {options.map(option => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

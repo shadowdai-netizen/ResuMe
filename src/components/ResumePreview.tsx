@@ -504,6 +504,9 @@ function ProfileSection({
           {data.basicInfo.maritalStatus && (
             <ProfileField icon="iconhunyinzhuangkuang" label="婚姻状况：" value={data.basicInfo.maritalStatus} themeColor={themeColor} mutedColor={mutedColor} />
           )}
+          {data.basicInfo.politicalStatus && (
+            <ProfileField label="政治面貌：" value={data.basicInfo.politicalStatus} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
         </div>
 
         {/* Job seeking info */}
@@ -514,6 +517,52 @@ function ProfileSection({
           {data.basicInfo.targetCity && (
             <ProfileField icon="iconxianjuchengshi" label="意向城市：" value={data.basicInfo.targetCity} themeColor={themeColor} mutedColor={mutedColor} />
           )}
+          {data.basicInfo.expectedPosition && (
+            <ProfileField label="期望职位：" value={data.basicInfo.expectedPosition} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
+          {(data.basicInfo.salaryMin || data.basicInfo.salaryMax) && (
+            <ProfileField
+              label="期望薪资："
+              value={formatSalaryRange(data.basicInfo.salaryMin, data.basicInfo.salaryMax)}
+              themeColor={themeColor}
+              mutedColor={mutedColor}
+            />
+          )}
+        </div>
+
+        {/* Social information */}
+        <div className="profile-item" style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', marginBottom: '2px' }}>
+          {data.basicInfo.personalWebsite && (
+            <ProfileField label="个人网站：" value={data.basicInfo.personalWebsite} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
+          {data.basicInfo.wechat && (
+            <ProfileField label="微信：" value={data.basicInfo.wechat} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
+          {data.basicInfo.linkedin && (
+            <ProfileField label="LinkedIn：" value={data.basicInfo.linkedin} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
+        </div>
+
+        {/* Other information */}
+        <div className="profile-item" style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', marginBottom: '2px' }}>
+          {data.basicInfo.height && (
+            <ProfileField label="身高：" value={data.basicInfo.height} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
+          {data.basicInfo.weight && (
+            <ProfileField label="体重：" value={data.basicInfo.weight} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
+          {data.basicInfo.ethnicity && (
+            <ProfileField label="民族：" value={data.basicInfo.ethnicity} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
+          {data.basicInfo.nativePlace && (
+            <ProfileField label="籍贯：" value={data.basicInfo.nativePlace} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
+          {data.basicInfo.zodiac && (
+            <ProfileField label="星座：" value={data.basicInfo.zodiac} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
+          {data.basicInfo.mbti && (
+            <ProfileField label="MBTI：" value={data.basicInfo.mbti} themeColor={themeColor} mutedColor={mutedColor} />
+          )}
         </div>
       </div>
 
@@ -523,7 +572,7 @@ function ProfileSection({
 }
 
 function ProfileField({ icon, label, value, themeColor, mutedColor }: {
-  icon: string
+  icon?: string
   label: string
   value: string
   themeColor: string
@@ -531,12 +580,18 @@ function ProfileField({ icon, label, value, themeColor, mutedColor }: {
 }) {
   return (
     <span style={{ borderColor: themeColor, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-      <i className={`attr-icon iconfont ${icon}`} style={{ color: themeColor }}></i>
+      {icon ? <i className={`attr-icon iconfont ${icon}`} style={{ color: themeColor }}></i> : null}
       <i className="attr-point" style={{ backgroundColor: themeColor, width: '3px', height: '3px', borderRadius: '50%', display: 'inline-block' }}></i>
       <label className="attr-name" style={{ color: mutedColor }}>{label}</label>
       {value}
     </span>
   )
+}
+
+function formatSalaryRange(min: string, max: string) {
+  if (min && max) return `${min} - ${max}`
+  if (min) return `${min}起`
+  return `${max}以内`
 }
 
 function SectionBlock({ type, title, children, themeColor, subtleColor, moduleSpacing, moduleTitleSpacing, scale, titleStyle, titleBarColor }: {

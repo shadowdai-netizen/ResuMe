@@ -9,6 +9,19 @@ export interface ResumeData {
     maritalStatus: string
     currentStatus: string
     targetCity: string
+    expectedPosition: string
+    salaryMin: string
+    salaryMax: string
+    personalWebsite: string
+    wechat: string
+    linkedin: string
+    height: string
+    weight: string
+    ethnicity: string
+    nativePlace: string
+    zodiac: string
+    mbti: string
+    politicalStatus: string
   }
   education: EducationItem[]
   workExperience: WorkItem[]
@@ -98,6 +111,19 @@ export const resumeData: ResumeData = {
     maritalStatus: '未婚',
     currentStatus: '',
     targetCity: '杭州',
+    expectedPosition: '',
+    salaryMin: '',
+    salaryMax: '',
+    personalWebsite: '',
+    wechat: '',
+    linkedin: '',
+    height: '',
+    weight: '',
+    ethnicity: '',
+    nativePlace: '',
+    zodiac: '',
+    mbti: '',
+    politicalStatus: '',
   },
   education: [],
   workExperience: [
