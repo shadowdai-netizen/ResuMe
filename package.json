@@ -6,10 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "npm run build && vite preview",
-    "deploy": "npm run build && wrangler deploy"
+    "preview": "npm run build && vite preview"
   },
-  "node": ">=20.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
