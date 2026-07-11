@@ -6,6 +6,7 @@ import ModuleManagerPanel from './components/ModuleManagerPanel'
 import ResumeLibraryPanel from './components/ResumeLibraryPanel'
 import { resumeData as defaultData } from './data/resumeData'
 import type { ResumeData } from './data/resumeData'
+import { getResumePhotoBlob, type ResumePhoto } from './data/resumePhoto'
 import { getDefaultActiveModuleId, isActiveModuleIdValid } from './utils/moduleSelection'
 import { createResumeSkillMarkdown, parseResumeSchemaJson, parseResumeSkillMarkdown } from './utils/resumeSchema'
 import {
@@ -65,6 +66,7 @@ function normalizeStoredResume(resume: StoredResume): StoredResume {
   return {
     ...resume,
     data,
+    photo: getResumePhotoBlob(resume.photo) ? resume.photo : null,
     config: { ...DEFAULT_PREVIEW_SETTINGS, ...resume.config },
   }
 }
@@ -73,6 +75,7 @@ function App() {
   const resumeRef = useRef<HTMLDivElement>(null)
   const schemaInputRef = useRef<HTMLInputElement>(null)
   const [resumeData, setResumeData] = useState<ResumeData>(defaultData)
+  const [resumePhoto, setResumePhoto] = useState<ResumePhoto | null>(null)
   const [activeModule, setActiveModule] = useState<string | null>(null)
   const [activePreviewTab, setActivePreviewTab] = useState<'typography' | 'titles'>('typography')
   const [schemaFeedback, setSchemaFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -115,6 +118,7 @@ function App() {
     activeStoredResumeRef.current = resume
     setActiveResumeId(resume.id)
     setResumeData(resume.data)
+    setResumePhoto(resume.photo)
     setPreviewSettings(resume.config)
     setActiveModule(getDefaultActiveModuleId(resume.data))
     setIsResumeLibraryOpen(false)
@@ -126,11 +130,12 @@ function App() {
 
     setStorageLoading(true)
     try {
-      const resume = await saveStoredResume(createResumeId(), name, defaultData, DEFAULT_PREVIEW_SETTINGS)
+      const resume = await saveStoredResume(createResumeId(), name, defaultData, null, DEFAULT_PREVIEW_SETTINGS)
       activeStoredResumeRef.current = resume
       setStoredResumes(previous => [resume, ...previous])
       setActiveResumeId(resume.id)
       setResumeData(resume.data)
+      setResumePhoto(resume.photo)
       setPreviewSettings(resume.config)
       setActiveModule(getDefaultActiveModuleId(resume.data))
       setIsResumeLibraryOpen(false)
@@ -151,6 +156,7 @@ function App() {
         resume.id,
         name,
         resume.data,
+        resume.photo,
         resume.config,
         { createdAt: resume.createdAt, updatedAt: Date.now() },
       )
@@ -240,7 +246,7 @@ function App() {
           setStoredResumes(resumes)
           handleSelectResume(resumes[0])
         } else {
-          const firstResume = await saveStoredResume(createResumeId(), '我的简历', defaultData, DEFAULT_PREVIEW_SETTINGS)
+          const firstResume = await saveStoredResume(createResumeId(), '我的简历', defaultData, null, DEFAULT_PREVIEW_SETTINGS)
           activeStoredResumeRef.current = firstResume
           setStoredResumes([firstResume])
           setActiveResumeId(firstResume.id)
@@ -268,6 +274,7 @@ function App() {
           current.id,
           current.name,
           resumeData,
+          resumePhoto,
           previewSettings,
           { createdAt: current.createdAt, updatedAt: Date.now() },
         )
@@ -279,7 +286,7 @@ function App() {
     }, 350)
 
     return () => window.clearTimeout(timer)
-  }, [activeResumeId, previewSettings, resumeData, storageReady])
+  }, [activeResumeId, previewSettings, resumeData, resumePhoto, storageReady])
 
   return (
     <div className="preview-stage-shell">
@@ -287,7 +294,9 @@ function App() {
         {/* Left: Editor */}
         <EditorPanel
           data={resumeData}
+          photo={resumePhoto}
           onChange={setResumeData}
+          onPhotoChange={setResumePhoto}
           activeModuleId={activeModule}
           onModuleFocus={setActiveModule}
         />
@@ -579,6 +588,7 @@ function App() {
               <div ref={resumeRef}>
                 <ResumePreview
                   data={resumeData}
+                  photo={resumePhoto}
                   settings={previewSettings}
                   activeModule={activeModule}
                   onModuleHover={handleModuleHover}

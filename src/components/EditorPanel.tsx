@@ -1,5 +1,6 @@
-import { lazy, memo, Suspense, useMemo, type ComponentProps, type ReactNode } from 'react'
+import { lazy, memo, Suspense, useEffect, useMemo, useState, type ComponentProps, type ReactNode } from 'react'
 import { DEFAULT_MODULE_TITLES, type CustomResumeModule, type ResumeData, type ResumeModule, type WorkItem } from '../data/resumeData'
+import { getResumePhotoBlob, type ResumePhoto } from '../data/resumePhoto'
 import './EditorPanel.css'
 
 const MarkdownEditor = lazy(() => import('./MarkdownEditor'))
@@ -14,12 +15,14 @@ function DeferredMarkdownEditor(props: ComponentProps<typeof MarkdownEditor>) {
 
 interface EditorPanelProps {
   data: ResumeData
+  photo: ResumePhoto | null
   onChange: (data: ResumeData) => void
+  onPhotoChange: (photo: ResumePhoto | null) => void
   activeModuleId: string | null
   onModuleFocus: (id: string | null) => void
 }
 
-function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPanelProps) {
+function EditorPanel({ data, photo, onChange, onPhotoChange, activeModuleId, onModuleFocus }: EditorPanelProps) {
   const activeEducationIndex = useMemo(() => getIndexedPosition(activeModuleId, 'edu'), [activeModuleId])
   const activeWorkIndex = useMemo(() => getIndexedPosition(activeModuleId, 'work'), [activeModuleId])
   const activeProjectIndex = useMemo(() => getIndexedPosition(activeModuleId, 'project'), [activeModuleId])
@@ -214,6 +217,7 @@ function EditorPanel({ data, onChange, activeModuleId, onModuleFocus }: EditorPa
             title={getModuleTitle(basicInfoModule)}
             description="个人信息模块不可删除、不可排序，仅保留单实例。"
           >
+            <PhotoField photo={photo} onChange={onPhotoChange} />
             <div className="form-grid">
               <FormField label="姓名" value={data.basicInfo.name} onChange={value => updateBasicInfo('name', value)} />
               <FormField label="电话" value={data.basicInfo.phone} onChange={value => updateBasicInfo('phone', value)} />
@@ -617,6 +621,80 @@ function ExperienceEditorSection({
         />
       </div>
     </EditorSection>
+  )
+}
+
+function PhotoField({ photo, onChange }: {
+  photo: ResumePhoto | null
+  onChange: (photo: ResumePhoto | null) => void
+}) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!photo) {
+      setPreviewUrl(null)
+      return
+    }
+
+    const blob = getResumePhotoBlob(photo)
+    if (!blob) {
+      setPreviewUrl(null)
+      return
+    }
+
+    try {
+      const url = URL.createObjectURL(blob)
+      setPreviewUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } catch {
+      setPreviewUrl(null)
+    }
+  }, [photo])
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      event.target.value = ''
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      event.target.value = ''
+      return
+    }
+
+    onChange({
+      blob: file,
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    })
+    event.target.value = ''
+  }
+
+  return (
+    <div className="editor-photo-field">
+      <div className="editor-photo-preview">
+        {previewUrl ? <img src={previewUrl} alt="简历照片预览" /> : <span>暂无照片</span>}
+      </div>
+      <div className="editor-photo-info">
+        <span className="form-label">个人照片</span>
+        <span className="editor-photo-hint">每份简历仅支持一张，建议使用 JPG/PNG，最大 5MB。</span>
+        <div className="editor-photo-actions">
+          <label className="editor-action-btn editor-photo-upload">
+            {photo ? '替换照片' : '上传照片'}
+            <input type="file" accept="image/*" onChange={handleFileChange} />
+          </label>
+          {photo ? (
+            <button type="button" className="editor-action-btn danger" onClick={() => onChange(null)}>
+              删除照片
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
   )
 }
 

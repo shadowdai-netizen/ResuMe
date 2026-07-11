@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { marked } from 'marked'
 import type { CustomResumeModule, ResumeData, ResumeModule } from '../data/resumeData'
+import { getResumePhotoBlob, type ResumePhoto } from '../data/resumePhoto'
 
 export type TitleStyleVariant = 'classic' | 'banner' | 'underline' | 'capsule'
 export type ProfileStyleVariant = 'classic' | 'centered' | 'card' | 'split'
@@ -26,6 +27,7 @@ export interface PreviewSettings {
 
 interface ResumePreviewProps {
   data: ResumeData
+  photo: ResumePhoto | null
   settings: PreviewSettings
   activeModule: string | null
   onModuleHover: (moduleId: string | null) => void
@@ -33,7 +35,7 @@ interface ResumePreviewProps {
   onPageCountChange?: (pageCount: number) => void
 }
 
-function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleClick, onPageCountChange }: ResumePreviewProps) {
+function ResumePreview({ data, photo, settings, activeModule, onModuleHover, onModuleClick, onPageCountChange }: ResumePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null)
   const [previewWidth, setPreviewWidth] = useState(794)
   const moduleIds = useMemo(() => data.modules.map(module => module.id), [data.modules])
@@ -135,6 +137,7 @@ function ResumePreview({ data, settings, activeModule, onModuleHover, onModuleCl
           <div id="cv-container" className="is-page-margin">
             <ResumePage
               data={data}
+              photo={photo}
               settings={settings}
               activeModule={activeModule}
               onModuleHover={onModuleHover}
@@ -154,6 +157,7 @@ type ResumePageProps = ResumePreviewProps & {
 
 function ResumePage({
   data,
+  photo,
   settings,
   activeModule,
   onModuleHover,
@@ -224,6 +228,7 @@ function ResumePage({
                     return renderModuleSection({
                       module,
                       data,
+                      photo,
                       activeModule,
                       onModuleHover,
                       onModuleClick,
@@ -258,6 +263,7 @@ function ResumePage({
 function renderModuleSection({
   module,
   data,
+  photo,
   activeModule,
   onModuleHover,
   onModuleClick,
@@ -274,6 +280,7 @@ function renderModuleSection({
 }: {
   module: ResumeModule
   data: ResumeData
+  photo: ResumePhoto | null
   activeModule: string | null
   onModuleHover: (moduleId: string | null) => void
   onModuleClick: (moduleId: string) => void
@@ -301,6 +308,7 @@ function renderModuleSection({
       >
         <ProfileSection
           data={data}
+          photo={photo}
           themeColor={themeColor}
           mutedColor={mutedColor}
           moduleSpacing={moduleSpacing}
@@ -526,6 +534,7 @@ function ModuleWrapper({
 
 function ProfileSection({
   data,
+  photo,
   themeColor,
   mutedColor,
   moduleSpacing,
@@ -533,15 +542,39 @@ function ProfileSection({
   profileStyle,
 }: {
   data: ResumeData
+  photo: ResumePhoto | null
   themeColor: string
   mutedColor: string
   moduleSpacing: number
   scale: number
   profileStyle: ProfileStyleVariant
 }) {
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!photo) {
+      setPhotoUrl(null)
+      return
+    }
+
+    const blob = getResumePhotoBlob(photo)
+    if (!blob) {
+      setPhotoUrl(null)
+      return
+    }
+
+    try {
+      const url = URL.createObjectURL(blob)
+      setPhotoUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } catch {
+      setPhotoUrl(null)
+    }
+  }, [photo])
+
   return (
     <div
-      className={`user no-avatar no-school-logo basic title-module-strip-profile profile-style-${profileStyle}`}
+      className={`user ${photoUrl ? 'has-avatar' : 'no-avatar'} no-school-logo basic title-module-strip-profile profile-style-${profileStyle}`}
       style={{
         borderColor: profileStyle === 'card' ? withAlpha(themeColor, 0.18) : 'transparent',
         borderLeftColor: profileStyle === 'card' ? themeColor : undefined,
@@ -638,7 +671,9 @@ function ProfileSection({
         </div>
       </div>
 
-      <div className="user-avatar">{/* no avatar */}</div>
+      <div className="user-avatar">
+        {photoUrl ? <img src={photoUrl} alt="个人照片" /> : null}
+      </div>
     </div>
   )
 }

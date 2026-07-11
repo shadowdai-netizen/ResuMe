@@ -1,5 +1,6 @@
 import type { PreviewSettings } from '../components/ResumePreview'
 import type { ResumeData } from '../data/resumeData'
+import type { ResumePhoto } from '../data/resumePhoto'
 import { RESUME_DATA_SCHEMA } from './resumeSchema'
 
 const DATABASE_NAME = 'cv-preview'
@@ -10,6 +11,7 @@ export interface StoredResume {
   id: string
   name: string
   data: ResumeData
+  photo: ResumePhoto | null
   config: PreviewSettings
   schema: typeof RESUME_DATA_SCHEMA
   createdAt: number
@@ -57,6 +59,7 @@ export async function saveStoredResume(
   id: string,
   name: string,
   data: ResumeData,
+  photo: ResumePhoto | null,
   config: PreviewSettings,
   timestamps?: Pick<StoredResume, 'createdAt' | 'updatedAt'>,
 ): Promise<StoredResume> {
@@ -66,6 +69,7 @@ export async function saveStoredResume(
     id,
     name,
     data,
+    photo,
     config,
     schema: RESUME_DATA_SCHEMA,
     createdAt: timestamps?.createdAt ?? now,
